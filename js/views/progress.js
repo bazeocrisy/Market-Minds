@@ -14,7 +14,7 @@ export function safeLevel(state, id) { try { return masteryFor(state, id)?.level
 
 /** Mastery table shared with the Parent & Teacher view. */
 export function skillTable(state, ids = SKILL_IDS) {
-  return h('div', { class: 'table-wrap' }, h('table', {},
+  return h('div', { class: 'table-wrap table-stack' }, h('table', {},
     h('caption', { class: 'sr-only' }, 'Skill mastery'),
     h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Skill'), h('th', { scope: 'col' }, 'Level'),
       h('th', { scope: 'col' }, 'On your own'), h('th', { scope: 'col' }, 'With help'), h('th', { scope: 'col' }, 'Recent'))),
@@ -25,10 +25,10 @@ export function skillTable(state, ids = SKILL_IDS) {
       const recent = k?.recent || [];
       return h('tr', {},
         h('th', { scope: 'row' }, skillName(id), h('div', { class: 'small muted', style: 'font-weight:400' }, SKILLS[id]?.description || '')),
-        h('td', {}, levelBadge(safeLevel(state, id))),
-        h('td', {}, `${ind.correct} of ${ind.attempts} correct`),
-        h('td', {}, `${ast.correct} of ${ast.attempts} correct`, k?.revealed ? h('div', { class: 'small muted' }, `${k.revealed} shown`) : null),
-        h('td', {}, recent.length
+        h('td', { 'data-label': 'Level' }, levelBadge(safeLevel(state, id))),
+        h('td', { 'data-label': 'On your own' }, `${ind.correct} of ${ind.attempts} correct`),
+        h('td', { 'data-label': 'With help' }, `${ast.correct} of ${ast.attempts} correct`, k?.revealed ? h('div', { class: 'small muted' }, `${k.revealed} shown`) : null),
+        h('td', { 'data-label': 'Recent' }, recent.length
           ? h('span', { class: 'recent-dots', role: 'img', 'aria-label': `Last ${recent.length} on-your-own answers: ${recent.filter(Boolean).length} correct` },
             recent.map((x) => h('i', { class: x ? '' : 'miss' })))
           : h('span', { class: 'muted' }, '—')));
@@ -51,9 +51,9 @@ export function render(el, params, ctx) {
 
   page.append(h('div', { class: 'stats' },
     statBox(`${done.length} of ${ready.length}`, 'lessons completed'),
-    statBox(introduced.length, 'skills introduced'),
-    statBox(mastered.length, 'skills mastered'),
-    statBox(queue.length, 'skills to review')));
+    statBox(introduced.length, introduced.length === 1 ? 'skill introduced' : 'skills introduced'),
+    statBox(mastered.length, mastered.length === 1 ? 'skill mastered' : 'skills mastered'),
+    statBox(queue.length, queue.length === 1 ? 'skill to review' : 'skills to review')));
 
   page.append(notice(h('div', {},
     h('p', {}, h('strong', {}, 'How mastery is earned. '),

@@ -75,8 +75,16 @@ function renderScope(page, scope, ctx) {
   renderIntro(page, info, ctx);
 }
 
+const ACTIVE_KEY = 'mm.test.active';
+const flag = { get() { try { return sessionStorage.getItem(ACTIVE_KEY); } catch { return null; } },
+  set(v) { try { if (v) sessionStorage.setItem(ACTIVE_KEY, v); else sessionStorage.removeItem(ACTIVE_KEY); } catch { /* ignore */ } } };
+
 function renderIntro(page, info, ctx) {
   page.append(pageHead({ eyebrow: 'Test', title: scopeTitle(info, ctx.band) }));
+  if (flag.get()) {
+    page.append(notice('Your last test was interrupted (the page was refreshed or closed) before you submitted it, so it was not scored. You can start a fresh test.', 'info'));
+    flag.set(null);
+  }
   const skills = info.kind === 'lesson' ? info.lesson.skills || [] : lessonsInWorld(info.world).filter((l) => l.status === 'ready').flatMap((l) => l.skills || []);
   page.append(h('div', { class: 'card stack' },
     h('p', {}, `${plural(info.length, 'question')}, one at a time. You can go back and change answers before you submit.`),
@@ -93,6 +101,7 @@ function start(info, ctx) {
   let test;
   try { test = createTest({ band: ctx.band, scope, length: info.length }, ctx.store); } catch (e) { console.error(e); return; }
   running = { scope, test, answers: new Array(test.items.length).fill(null), index: 0, results: null };
+  flag.set(scope);
   ctx.go(location.hash); // re-render this route (now showing item 1)
 }
 
@@ -105,7 +114,8 @@ function renderItem(page, info, ctx) {
   const count = h('p', { class: 'tally', 'aria-live': 'polite' });
   const paint = () => count.replaceChildren(h('span', {}, 'Answered: ', h('strong', {}, `${answered()} of ${n}`)), h('span', {}, 'No hints on tests'));
   paint();
-  const q = items[r.index];
+  const item = items[r.index];
+  const q = item.question || item;   // engine items wrap the (answer-free) question
   const view = renderQuestion(q, {
     band: ctx.band, mode: 'test', value: r.answers[r.index],
     onSubmit: (resp) => { r.answers[r.index] = resp; try { r.test.answer(r.index, resp); } catch (e) { console.error(e); } paint(); }
@@ -127,6 +137,7 @@ function renderItem(page, info, ctx) {
     let results;
     try { results = r.test.submit(); } catch (e) { console.error(e); results = {}; }
     r.results = results || {};
+    flag.set(null);
     ctx.go(location.hash);
   }, `btn ${r.index === n - 1 ? 'btn-gold' : ''} btn-lg`);
   page.append(count, h('div', { class: 'lesson-step' }, view.el), nav, h('div', { class: 'btn-row' }, submit));
@@ -136,7 +147,9 @@ function renderResults(page, info, ctx) {
   const r = running;
   const items = r.test.items;
   const res = r.results;
-  const per = items.map((q, i) => {
+  const per = items.map((item, i) => {
+    // After submit the engine returns the full question (answer + explanation) in res.items.
+    const q = res.items?.[i]?.question || item.question || item;
     const given = res.items?.[i]?.response ?? r.answers[i];
     let correct = res.items?.[i]?.correct;
     if (typeof correct !== 'boolean') { try { correct = given != null && checkResponse(q, given).correct; } catch { correct = false; } }

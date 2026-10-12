@@ -28,7 +28,7 @@ export function go(hash) {
 
 function stopSpeech() { try { globalThis.speechSynthesis?.cancel(); } catch { /* unsupported */ } }
 
-async function route() {
+async function route(opts = {}) {
   const id = ++renderId;
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
   stopSpeech();
@@ -53,8 +53,9 @@ async function route() {
   closeMenu();
   // Move focus to the new page heading so keyboard and screen-reader users land on the new content.
   const h = viewEl.querySelector('h1');
+  if (opts.keepFocus?.isConnected) { opts.keepFocus.focus(); return; }
   if (h) { if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
-  window.scrollTo(0, 0);
+  if (!opts.keepScroll) window.scrollTo(0, 0);
 }
 
 // ---------- grade band controls: any [data-band] button ----------
@@ -68,8 +69,9 @@ document.addEventListener('click', (e) => {
   if (!b) return;
   if (store.get().band !== b.dataset.band) {
     store.setBand(b.dataset.band);
-    // Re-render so the current page switches to the new grade's text and maths.
-    route();
+    // Re-render so the current page switches to the new grade's text and maths,
+    // but keep keyboard focus on the grade button the learner just pressed.
+    route({ keepFocus: b });
   }
 });
 
@@ -85,6 +87,15 @@ toggle?.addEventListener('click', () => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { closeMenu(); toggle.focus(); } });
 
 store.subscribe(syncBand);
+// Progress saved in another tab: refresh read-only summary pages so they never show stale numbers.
+// (Pages with work in progress — lessons, practice, tests — are left alone.)
+const LIVE_VIEWS = new Set(['dashboard', 'progress', 'parent']);
+window.addEventListener('storage', (e) => {
+  if ((e.key === 'mm.progress.v1' || e.key === null) && LIVE_VIEWS.has(viewEl.dataset.view)) {
+    const active = document.activeElement;
+    route({ keepScroll: true, keepFocus: active && !viewEl.contains(active) ? active : null });
+  }
+});
 syncBand();
 window.addEventListener('hashchange', route);
 route();

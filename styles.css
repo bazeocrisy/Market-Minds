@@ -733,3 +733,13 @@ dialog.modal[open]:not(:modal) { position: fixed; inset: 0; margin: auto; z-inde
   a { color: #000; text-decoration: none; }
   h2, h3 { break-after: avoid; }
 }
+
+/* Skill tables stack into labelled rows on phones (QA m5). */
+@media (max-width: 600px) {
+  .table-stack table, .table-stack tbody, .table-stack tr, .table-stack th, .table-stack td { display: block; width: 100%; }
+  .table-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table-stack tr { border-bottom: 1px solid var(--line); padding: var(--s2) 0; }
+  .table-stack th, .table-stack td { border: 0; padding: var(--s1) var(--s3); }
+  .table-stack th[scope="row"] { background: transparent; }
+  .table-stack td[data-label]::before { content: attr(data-label) ": "; font-weight: 700; color: var(--navy); }
+}

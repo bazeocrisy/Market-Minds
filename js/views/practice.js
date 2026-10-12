@@ -101,7 +101,7 @@ function renderChooser(page, ctx) {
     const w = worlds.find((x) => x.id === worldSel.value) || worlds[0];
     const ls = lessonsInWorld(w).filter((l) => l.status === 'ready');
     lessonSel.replaceChildren(h('option', { value: '' }, 'All ready lessons in this world'),
-      ls.map((l) => h('option', { value: l.id }, `Lesson ${l.number ?? ''}: ${l.title}`)));
+      ...ls.map((l) => h('option', { value: l.id }, `Lesson ${l.number ?? ''}: ${l.title}`)));
     if (keep && ls.some((l) => l.id === keep)) lessonSel.value = keep;
   };
   const skillsForSelection = () => {
@@ -111,7 +111,7 @@ function renderChooser(page, ctx) {
   };
   const fillSkills = (keep) => {
     const ss = skillsForSelection();
-    skillSel.replaceChildren(h('option', { value: '' }, 'All skills listed above'), ss.map((s) => h('option', { value: s }, skillName(s))));
+    skillSel.replaceChildren(h('option', { value: '' }, 'All skills listed above'), ...ss.map((s) => h('option', { value: s }, skillName(s))));
     if (keep && ss.includes(keep)) skillSel.value = keep;
   };
   fillLessons(preLesson?.id);

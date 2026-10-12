@@ -154,9 +154,15 @@ function h(tag, attrs = {}, ...kids) {
   return e;
 }
 
+let figureCount = 0;
 function figure(kind, title) {
   const fig = h('figure', { class: `mm-visual mm-visual--${kind}` });
-  if (title) fig.append(h('figcaption', { class: 'mm-visual__title', text: title }));
+  if (title) {
+    const id = `mmv-${++figureCount}`;
+    fig.append(h('figcaption', { class: 'mm-visual__title', id, text: title }));
+    fig.setAttribute('role', 'group');
+    fig.setAttribute('aria-labelledby', id);
+  }
   return fig;
 }
 
