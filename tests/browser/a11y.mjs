@@ -16,9 +16,16 @@ const q = (e) => b.js(`return ${e};`);
 const ROUTES = ['#/', '#/learn', '#/learn/w1l1/1', '#/learn/w1l1/2', '#/learn/w1l1/3', '#/learn/w1l1/4', '#/learn/w1l1/5', '#/learn/w1l1/6',
   '#/learn/w1l2/1', '#/learn/w1l2/3', '#/learn/w1l3/3', '#/learn/w2l1/1', '#/learn/w2l1/3', '#/learn/w2l1/5', '#/practice', '#/practice/session', '#/practice/summary',
   '#/thinking', '#/market-lab', '#/market-lab?activity=paper', '#/market-lab?activity=watch', '#/test', '#/test/w1l1', '#/test/world-1',
-  '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent', '#/learn/nope', '#/bogus'];
-const ERROR_H1 = ['This page could not load', 'We couldn’t find that lesson', 'That step doesn’t exist', 'That test isn’t available'];
-const INTERACTIVE = new Set(['button', 'link', 'textbox', 'combobox', 'listbox', 'radio', 'checkbox', 'tab', 'menuitem', 'spinbutton', 'searchbox', 'switch', 'slider', 'img', 'dialog', 'option', 'progressbar', 'radiogroup']);
+  '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent', '#/learn/nope', '#/bogus',
+  // app shell + Batch 2
+  '#/welcome', '#/certificates', '#/certificates/world-1', '#/certificates/skill-candlestick-reading', '#/certificates/nope',
+  '#/learn/w2l2/1', '#/learn/w2l2/3', '#/learn/w2l2/5', '#/learn/w2l3/3', '#/learn/w2l3/4', '#/learn/w2l4/3', '#/learn/w2l4/5',
+  '#/learn/w4l1/1', '#/learn/w4l1/3', '#/learn/w4l1/5', '#/learn/w4l2/3', '#/learn/w4l2/4', '#/learn/w4l2/5', '#/learn/w4l3/3', '#/learn/w4l3/5', '#/learn/w4l4/3', '#/learn/w4l4/5',
+  '#/test/world-2', '#/test/world-4', '#/test/w4l2', '#/thinking/tl-w4-read-candle', '#/thinking/tl-w2-hedger-or-speculator', '#/thinking/tl-w4-streak-next',
+  '#/market-lab?activity=paper&scenario=pretend-rice-pattern-trap'];
+const ERROR_H1 = ['This page could not load', 'We couldn’t find that lesson', 'That step doesn’t exist', 'That test isn’t available', 'That certificate doesn’t exist'];
+const EXPECTED_ERROR_ROUTES = ['#/learn/nope', '#/bogus', '#/certificates/nope'];
+const INTERACTIVE = new Set(['button', 'link', 'textbox', 'combobox', 'listbox', 'radio', 'checkbox', 'tab', 'menuitem', 'spinbutton', 'searchbox', 'switch', 'slider', 'img', 'image', 'dialog', 'option', 'progressbar', 'radiogroup']);
 
 // ---------------------------------------------------------------- in-page audit helpers
 const AUDIT_SRC = `(() => {
@@ -73,6 +80,27 @@ const AUDIT_SRC = `(() => {
       }
       return { fails, unknown: [...new Set(unknown)].slice(0, 20), count: samples.length, samples };
     },
+    welcome() {
+      const root = document.querySelector('.welcome'); if (!root) return null;
+      const navy = parse(getComputedStyle(root).backgroundColor);
+      const bases = [navy, blend({ r: 91, g: 210, b: 194, a: 0.16 }, navy), blend({ r: 240, g: 191, b: 85, a: 0.12 }, navy)];
+      const out = [];
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const seen = new Set();
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const el = n.parentElement; if (!el || seen.has(el) || !n.textContent.trim() || !vis(el)) continue; seen.add(el);
+        const layers = []; for (let e = el; e && e !== root; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c.a > 0) layers.push(c); }
+        const s = getComputedStyle(el); const fg = parse(s.color);
+        const size = parseFloat(s.fontSize), bold = Number(s.fontWeight) >= 700; const need = (size >= 24 || (size >= 18.66 && bold)) ? 3 : 4.5;
+        let worst = 99;
+        for (const base of bases) {
+          let bg = base; for (let i = layers.length - 1; i >= 0; i--) bg = blend(layers[i], bg);
+          const f = blend(fg, bg); const l1 = lum(f), l2 = lum(bg); worst = Math.min(worst, (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05));
+        }
+        out.push({ el: desc(el), text: n.textContent.trim().slice(0, 30), ratio: Math.round(worst * 100) / 100, need });
+      }
+      return out;
+    },
     images() {
       const bad = [];
       for (const img of document.querySelectorAll('img')) if (!img.hasAttribute('alt')) bad.push('img without alt: ' + img.src);
@@ -92,7 +120,7 @@ const AUDIT_SRC = `(() => {
       return hits;
     },
     targets() {
-      const sel = '.btn, .choice, .band-btn, .menu-toggle, .grade-choice button, .lab-tab, .radio-cards label, select, input[type=text], input[type=number], textarea, .card-link, .modal-close, #siteNav.open a';
+      const sel = '.btn, .choice, .band-btn, .menu-toggle, .grade-choice button, .welcome-grade, .app-tabs a, .lab-tab, .radio-cards label, select, input[type=text], input[type=number], textarea, .card-link, .modal-close, #siteNav.open a';
       const small = [], smallSm = [];
       for (const el of document.querySelectorAll(sel)) {
         if (!vis(el)) continue;
@@ -167,7 +195,7 @@ try {
         check(`${tag} exactly one h1`, (await q(`document.querySelectorAll('#view h1').length`)) === 1);
         check(`${tag} focus moved to the h1`, await q(`document.activeElement === document.querySelector('#view h1')`), await q('document.activeElement.outerHTML.slice(0, 80)'));
         const h1 = await L.text(b, '#view h1');
-        if (!['#/learn/nope', '#/bogus'].includes(r)) check(`${tag} not an error page`, !ERROR_H1.includes(h1), h1);
+        if (!EXPECTED_ERROR_ROUTES.includes(r)) check(`${tag} not an error page`, !ERROR_H1.includes(h1), h1);
         const empty = await axEmptyNames();
         check(`${tag} every interactive element has an accessible name`, empty.length === 0, empty.slice(0, 4).join(' || '));
         const imgs = await q('window.__a11y.images()');
@@ -214,8 +242,23 @@ try {
   spots.push(await spot('#/learn/w1l1/1', '#view nav.lesson-nav .btn:not(.btn-primary)', 'secondary button'));
   spots.push(await spot('#/learn', '#view .chip', 'chip'));
   spots.push(await spot('#/', '#view .card-status', 'card status text'));
-  spots.push(await spot('#/', '.site-footer .footer-privacy', 'footer small text'));
-  spots.push(await spot('#/', '.site-nav a', 'nav link'));
+  spots.push(await spot('#/', '.about-safety p', 'More → About & safety text'));
+  spots.push(await spot('#/', '#siteNav a[href="#/dictionary"]', 'More sheet link'));
+  spots.push(await spot('#/learn', '.app-tabs a[href="#/practice"]', 'top nav tab (inactive)'));
+  spots.push(await spot('#/learn', '.app-tabs a[aria-current="page"]', 'top nav tab (current)'));
+  spots.push(await spot('#/', '.band-switch [aria-pressed="true"]', 'grade switch (pressed)'));
+  spots.push(await spot('#/certificates', '#view .cert-card .chip', 'certificate status chip'));
+  await b.viewport(375, 812); await L.route(b, '#/learn');
+  spots.push(await spot('#/learn', '.app-tabs a[href="#/practice"]', 'bottom tab (inactive, 375)'));
+  spots.push(await spot('#/learn', '.app-tabs a[aria-current="page"]', 'bottom tab (current, 375)'));
+  for (const [w, h] of [[375, 812], [1440, 900]]) {
+    await b.viewport(w, h); await L.route(b, '#/welcome');
+    const wc = await q('window.__a11y.welcome()');
+    const bad = (wc || []).filter((x) => x.ratio < x.need);
+    check(`contrast: onboarding screen text at ${w} (worst case over its navy + gradient tints)`, wc && wc.length >= 6 && bad.length === 0, JSON.stringify(bad.length ? bad : wc).slice(0, 400));
+    if (w === 1440) console.log('info: onboarding contrast (worst case)', (wc || []).map((x) => `${x.text.slice(0, 16)} ${x.ratio}:1`).join(' | '));
+  }
+  await b.viewport(1440, 900);
   console.log('info: contrast spots', spots.map((s) => s && `${s.el} ${s.ratio}:1`).join(' | '));
 
   // ================================================================ every internal link resolves
@@ -242,8 +285,10 @@ try {
   }
   check('Tab reaches brand link', seq.some((x) => /brand/.test(x.cls)));
   check('Tab reaches both grade buttons', seq.some((x) => x.band === 'explorer') && seq.some((x) => x.band === 'analyst'));
-  check('Tab reaches all 11 nav links', seq.filter((x) => x.nav !== null).length === 11, JSON.stringify(seq.map((x) => x.text)));
-  check('menu button not in tab order on desktop', !seq.some((x) => /menu-toggle/.test(x.cls)));
+  check('Tab reaches the More button on desktop', seq.some((x) => /menu-toggle/.test(x.cls)));
+  check('Tab reaches all 7 primary tabs (top nav)', seq.filter((x) => x.nav !== null && /^(|learn|practice|thinking|market-lab|test|progress)$/.test(x.nav)).length === 7, JSON.stringify(seq.map((x) => x.text)));
+  check('closed More sheet links are not in the tab order', !seq.some((x) => ['dictionary', 'stories', 'journal', 'certificates', 'parent'].includes(x.nav)), JSON.stringify(seq.map((x) => x.text)));
+  check('Tab order: brand → grades → More → tabs', (() => { const i = (p) => seq.findIndex(p); return i((x) => /brand/.test(x.cls)) < i((x) => x.band === 'explorer') && i((x) => x.band === 'analyst') < i((x) => /menu-toggle/.test(x.cls)) && i((x) => /menu-toggle/.test(x.cls)) < i((x) => x.nav === ''); })(), JSON.stringify(seq.map((x) => x.text)));
   for (const x of seq) check(`visible focus indicator on ${x.tag}.${x.cls} "${x.text}"`, x.fv && (x.outline || x.shadow), JSON.stringify(x));
   // grade buttons via keyboard
   await b.js(`document.querySelector('.band-switch [data-band=analyst]').focus();`);
@@ -262,21 +307,45 @@ try {
   let reached = false;
   for (let i = 0; i < 6 && !reached; i++) { await L.press(b, 'Tab'); reached = await q(`document.activeElement.id === 'menuToggle'`); }
   check('Tab reaches the mobile menu button', reached);
-  check('menu button has accessible name', ((await L.axOf(b, '#menuToggle'))?.name || '') === 'Menu');
+  check('More button has accessible name "More"', ((await L.axOf(b, '#menuToggle'))?.name || '') === 'More', JSON.stringify(await L.axOf(b, '#menuToggle')));
   check('menu starts collapsed', (await q(`document.getElementById('menuToggle').getAttribute('aria-expanded')`)) === 'false' && !(await q(`document.querySelector('#siteNav a').offsetParent !== null`)));
   await L.press(b, 'Enter'); await b.wait(150);
   check('Enter opens menu (aria-expanded=true)', (await q(`document.getElementById('menuToggle').getAttribute('aria-expanded')`)) === 'true');
   check('open menu shows nav links', await q(`document.querySelector('#siteNav a').offsetParent !== null`));
   const mt = await q('window.__a11y.targets()');
   check('open mobile menu links ≥ 44px tall', mt.small.length === 0, mt.small.join(' | '));
+  check('opening moves focus into the sheet', await q(`document.getElementById('siteNav').contains(document.activeElement)`), await q('document.activeElement.outerHTML.slice(0, 80)'));
   await L.press(b, 'Tab');
-  check('Tab from menu button moves into the nav', await q(`document.getElementById('siteNav').contains(document.activeElement)`), await q('document.activeElement.outerHTML.slice(0, 80)'));
+  check('Tab moves through the sheet links', await q(`document.getElementById('siteNav').contains(document.activeElement)`), await q('document.activeElement.outerHTML.slice(0, 80)'));
   await L.press(b, 'Escape'); await b.wait(100);
   check('Esc closes menu', (await q(`document.getElementById('menuToggle').getAttribute('aria-expanded')`)) === 'false');
   check('Esc returns focus to menu button', await q(`document.activeElement.id === 'menuToggle'`));
   await L.press(b, ' '); await b.wait(100);
   check('Space also opens menu', (await q(`document.getElementById('menuToggle').getAttribute('aria-expanded')`)) === 'true');
   await L.press(b, 'Escape');
+  // the bottom tab bar by keyboard (phones): every tab reachable with Tab, Enter follows it
+  await b.js(`document.getElementById('menuToggle').focus();`);
+  const tabSeq = [];
+  for (let i = 0; i < 40 && tabSeq.length < 5; i++) {
+    await L.press(b, 'Tab');
+    const t = await q(`document.activeElement.closest('.app-tabs') ? document.activeElement.getAttribute('href') : null`);
+    if (t && !tabSeq.includes(t)) tabSeq.push(t);
+  }
+  check('Tab reaches all 5 bottom tabs at 375', tabSeq.length === 5, JSON.stringify(tabSeq));
+  await b.js(`document.querySelector('.app-tabs a[href="#/progress"]').focus();`);
+  const fvTab = await q(`(() => { const a = document.activeElement; const s = getComputedStyle(a); return a.matches(':focus-visible') && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0; })()`);
+  check('focused bottom tab shows a visible outline', fvTab);
+  await L.press(b, 'Enter'); await b.wait(300);
+  check('Enter on a bottom tab navigates and focuses the h1', (await q('location.hash')) === '#/progress' && (await q(`document.activeElement === document.querySelector('#view h1')`)));
+  // onboarding by keyboard
+  await b.load(URL); await b.js(`localStorage.clear(); sessionStorage.clear();`); await b.load(URL);
+  check('onboarding: h1 focused on first launch', await q(`document.activeElement === document.querySelector('#view h1')`));
+  await L.press(b, 'Tab');
+  check('onboarding: Tab reaches a grade button first', await q(`!!document.activeElement.closest('.welcome-grade')`), await q('document.activeElement.outerHTML.slice(0, 80)'));
+  const fvW = await q(`(() => { const a = document.activeElement; const s = getComputedStyle(a); return a.matches(':focus-visible') && s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0; })()`);
+  check('onboarding: grade button has a visible focus outline', fvW);
+  await L.press(b, ' '); await b.wait(400);
+  check('onboarding: Space chooses the grade', (await q('window.__mm.store.get().band')) === 'explorer' && (await q('location.hash')) === '#/');
 
   // ================================================================ keyboard: choices
   await L.route(b, '#/learn/w1l1/4');
@@ -319,8 +388,9 @@ try {
   info.push(`motion without preference: ${normalMotion.long.length} elements animate/transition`);
   await b.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await b.load(URL); await audit();
-  for (const r of ['#/', '#/learn/w1l1/1', '#/learn/w1l1/4', '#/practice', '#/market-lab', '#/progress', '#/dictionary']) {
+  for (const r of ['#/', '#/learn/w1l1/1', '#/learn/w1l1/4', '#/practice', '#/market-lab', '#/progress', '#/dictionary', '#/welcome', '#/certificates', '#/learn/w4l2/3', '#/market-lab?activity=paper&scenario=pretend-rice-pattern-trap']) {
     await L.route(b, r);
+    check(`reduced motion ${r}: screen transition off`, (await q(`getComputedStyle(document.getElementById('view')).animationName`)) === 'none', await q(`getComputedStyle(document.getElementById('view')).animationName`));
     const m = await q('window.__a11y.motion()');
     check(`reduced motion ${r}: no transitions/animations > 0.01s`, m.long.length === 0, m.long.slice(0, 4).join(' | '));
     check(`reduced motion ${r}: no running animations`, m.running === 0, String(m.running));

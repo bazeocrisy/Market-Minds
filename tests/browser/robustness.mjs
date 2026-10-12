@@ -31,6 +31,8 @@ try {
 
   // ================================================================ refresh mid-lesson
   await freshWith({ version: 1, band: 'explorer' });
+  const R0 = await b.js(`const m = await import(new URL('js/content/lessons.js', document.baseURI).href); return m.LESSONS.filter((l) => l.status === 'ready').length;`);
+  const NSK = await b.js(`const m = await import(new URL('js/ui/dom.js', document.baseURI).href); return m.readySkillIds().length;`);
   await L.route(b, '#/learn/w1l1/1');
   for (let i = 0; i < 2; i++) { await b.js(`document.querySelector('#view nav.lesson-nav a.btn-primary').click();`); await b.wait(300); }
   check('reached step 3 by Next links', (await q('location.hash')) === '#/learn/w1l1/3');
@@ -60,7 +62,7 @@ try {
   check('Back from Learn → Dashboard', /^Welcome/.test(await text('#view h1')), await text('#view h1'));
   await fwd();
   check('Forward → Learn', (await text('#view h1')) === 'Choose a lesson');
-  check('nav aria-current follows back/forward', (await q(`document.querySelector('#siteNav a[aria-current=page]')?.getAttribute('href')`)) === '#/learn');
+  check('nav aria-current follows back/forward', (await q(`document.querySelector('.app-tabs a[aria-current=page]')?.getAttribute('href')`)) === '#/learn');
   await L.route(b, '#/learn/w1l1/1');
   await b.js(`document.querySelector('#view .lesson-body button.term').click();`); await b.wait(150);
   check('word dialog open before Back', await q(`!!document.querySelector('dialog.modal[open]')`));
@@ -68,16 +70,28 @@ try {
   check('Back closes an open dialog', !(await q(`!!document.querySelector('dialog.modal')`)));
   check('no errors during back/forward', b.errors.length === 0, b.errors.join(' | '));
 
+  // ================================================================ onboarding refresh
+  await freshWith(null);
+  check('first launch → onboarding', (await q('location.hash')) === '#/welcome');
+  await b.reload();
+  check('refresh on onboarding stays on onboarding, nothing saved', (await q('location.hash')) === '#/welcome' && (await state()).band === null);
+  await b.load('about:blank'); await b.load(URL + '#/learn/w1l2/3');
+  check('first-launch deep link → onboarding', (await q('location.hash')) === '#/welcome');
+  await b.reload();
+  check('refresh on onboarding keeps the onboarding screen', (await q('location.hash')) === '#/welcome' && (await text('#view h1')) === 'Welcome to Market Minds');
+  check('remembered destination survives the refresh (sessionStorage)', (await q(`sessionStorage.getItem('mm.afterWelcome')`)) === '#/learn/w1l2/3', await q(`sessionStorage.getItem('mm.afterWelcome')`));
+  await b.js(`sessionStorage.clear();`);
+
   // ================================================================ corrupt storage
   await b.load(URL);
   await b.js(`localStorage.clear(); localStorage.setItem('mm.progress.v1', '{"version":1,"band":"explorer",BROKEN');`);
   let errs = b.errors.length;
   await b.load(URL);
-  check('corrupt JSON: app still loads', (await text('#view h1')) === 'Welcome to Market Minds!', await text('#view h1'));
+  check('corrupt JSON: app still loads (onboarding, since no grade survives)', (await text('#view h1')) === 'Welcome to Market Minds' && (await q('location.hash')) === '#/welcome', `${await text('#view h1')} ${await q('location.hash')}`);
   check('corrupt JSON: fresh state', (await state()).band === null && JSON.stringify((await state()).lessons) === '{}');
   check('corrupt JSON: backed up to mm.progress.corrupt', (await q(`localStorage.getItem('mm.progress.corrupt')`)) === '{"version":1,"band":"explorer",BROKEN');
   check('corrupt JSON: no console errors', b.errors.length === errs, b.errors.slice(errs).join(' | '));
-  await b.js(`document.querySelector('.grade-choice [data-band=explorer]').click();`); await b.wait(300);
+  await b.js(`document.querySelector('#view .welcome-grade[data-band=explorer]').click();`); await b.wait(300);
   check('corrupt JSON: app can save again', JSON.parse(await q(`localStorage.getItem('mm.progress.v1')`)).band === 'explorer');
   // wrong shape
   await b.js(`localStorage.setItem('mm.progress.v1', JSON.stringify({ version: 1, band: 'wizard', lessons: 'x', skills: [1, 2], misses: { a: 'b' }, tests: [{ score: 9, total: 2 }, null], lab: 5, current: { lessonId: 7 } }));`);
@@ -89,14 +103,14 @@ try {
   // different version
   await b.js(`localStorage.setItem('mm.progress.v1', JSON.stringify({ version: 99, band: 'explorer' }));`);
   await b.load(URL);
-  check('unknown version → fresh state, no crash', (await state()).band === null && (await text('#view h1')) === 'Welcome to Market Minds!');
+  check('unknown version → fresh state (onboarding), no crash', (await state()).band === null && (await text('#view h1')) === 'Welcome to Market Minds');
 
   // ================================================================ storage blocked entirely
   const blockId = await L.addInit(b, `Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });`);
   errs = b.errors.length;
   await b.load(URL);
-  check('storage blocked: app loads', (await text('#view h1')) === 'Welcome to Market Minds!', await text('#view h1'));
-  await b.js(`document.querySelector('.grade-choice [data-band=analyst]').click();`); await b.wait(300);
+  check('storage blocked: app loads (onboarding)', (await text('#view h1')) === 'Welcome to Market Minds', await text('#view h1'));
+  await b.js(`document.querySelector('#view .welcome-grade[data-band=analyst]').click();`); await b.wait(300);
   check('storage blocked: grade choice works in memory', (await text('#view h1')) === 'Welcome, Market Analyst!');
   await L.route(b, '#/learn/w1l1/2');
   check('storage blocked: lessons work', (await text('#view h1')) === 'What Is a Market?');
@@ -113,7 +127,7 @@ try {
   await b.wait(300);
   check('two-tab: store reloads from the other tab', (await state()).band === 'analyst' && (await state()).lessons.w1l1?.completed === true);
   check('two-tab: header grade buttons update', (await q(`document.querySelector('.band-switch [data-band=analyst]').getAttribute('aria-pressed')`)) === 'true');
-  check('two-tab: visible dashboard updates (no stale welcome/progress)', (await text('#view h1')) === 'Welcome, Market Analyst!' && ((await text('#view .hero-current')) || '').includes('1 of 4'),
+  check('two-tab: visible dashboard updates (no stale welcome/progress)', (await text('#view h1')) === 'Welcome, Market Analyst!' && ((await text('#view .hero-current')) || '').includes(`1 of ${R0}`),
     `${await text('#view h1')} | ${await text('#view .hero-current')}`);
   // no clobber: other tab writes newer data WITHOUT an event reaching us, then we save something
   const other2 = { ...other, updatedAt: Date.now() + 60000, journal: [...other.journal, { id: 'j-other-2', date: Date.now(), prediction: 'p', reasoning: 'r', outcome: 'o', lesson: 'market-lab' }] };
@@ -142,7 +156,7 @@ try {
   check('refresh during test: page says the unfinished test was not kept', /not (kept|saved|scored)|ended|started over|didn’t save|wasn’t saved/i.test(afterTest), `h1="${await text('#view h1')}" body="${afterTest.slice(0, 160)}"`);
 
   // ================================================================ GitHub Pages path safety
-  for (const r of ['#/', '#/learn', '#/learn/w1l1/1', '#/learn/w1l1/3', '#/practice', '#/thinking', '#/market-lab', '#/test', '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent']) {
+  for (const r of ['#/', '#/welcome', '#/certificates', '#/certificates/world-1', '#/learn/w2l3/3', '#/learn/w4l2/3', '#/learn', '#/learn/w1l1/1', '#/learn/w1l1/3', '#/practice', '#/thinking', '#/market-lab', '#/test', '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent']) {
     await b.load(URL + r);
     requested.push(...await perfUrls());
   }
@@ -197,7 +211,7 @@ try {
   check('dashboard: thinking', dash.includes('1 prompt answered'));
   check('dashboard: lab', dash.includes('2 practice runs'));
   check('dashboard: last test', dash.includes('Last score: 5 of 6'));
-  check('dashboard: mastered', dash.includes('1 skill mastered of 8') && ((await text('#view .hero-current')) || '').includes('1 skill mastered'));
+  check('dashboard: mastered', dash.includes(`1 of ${NSK} skills mastered`) && /Skills mastered\s*1 of /.test((await text('#view .hero-current')) || '') && ((await text('#view .hero-current')) || '').includes(`1 of ${NSK}`), `${(dash.match(/\d+ of \d+ skills? mastered/) || [])[0]} | ${await text('#view .hero-current')}`);
   await L.route(b, '#/progress');
   const stats = await b.js(`return [...document.querySelectorAll('#view .stats .stat')].map((x) => x.innerText.replace(/\\s+/g, ' '));`);
   check('progress stats equal store', JSON.stringify(stats) === JSON.stringify([`2 of ${R} lessons completed`, '3 skills introduced', '1 skill mastered', '1 skill to review']), JSON.stringify(stats));
@@ -217,7 +231,7 @@ try {
   const after = await state();
   check('reset clears everything', after.band === null && JSON.stringify(after.lessons) === '{}' && JSON.stringify(after.skills) === '{}' && after.tests.length === 0 && after.lab.runs === 0 && JSON.stringify(after.thinking) === '{}', JSON.stringify(after));
   check('reset persisted to storage', JSON.parse(await q(`localStorage.getItem('mm.progress.v1')`)).band === null);
-  check('reset returns to dashboard grade choice', (await q('location.hash')) === '#/' && (await text('#view h1')) === 'Welcome to Market Minds!');
+  check('reset returns to the onboarding screen', (await q('location.hash')) === '#/welcome' && (await text('#view h1')) === 'Welcome to Market Minds', `${await q('location.hash')} ${await text('#view h1')}`);
   await b.reload();
   check('reset survives reload', (await state()).band === null && Object.keys((await state()).lessons).length === 0);
   check('no console errors overall', b.errors.length === 0, b.errors.join(' | '));

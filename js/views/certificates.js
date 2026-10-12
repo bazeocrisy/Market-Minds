@@ -237,6 +237,6 @@ function seal() {
     '<circle cx="50" cy="50" r="46" fill="#f0bf55"/><circle cx="50" cy="50" r="38" fill="none" stroke="#102541" stroke-width="2"/>' +
     '<circle cx="50" cy="50" r="33" fill="none" stroke="#102541" stroke-width="1" stroke-dasharray="2 3"/>' +
     '<path d="M50 28l6.2 12.6 13.9 2-10 9.8 2.4 13.8L50 59.7l-12.5 6.5 2.4-13.8-10-9.8 13.9-2z" fill="#102541"/>' +
-    '<text x="50" y="80" text-anchor="middle" font-size="8" font-weight="800" fill="#102541" font-family="system-ui, sans-serif" letter-spacing="1">SKILL SHOWN</text></svg>';
+    '<text x="50" y="76" text-anchor="middle" font-size="6.5" font-weight="800" fill="#102541" font-family="system-ui, sans-serif" letter-spacing=".5" textLength="40" lengthAdjust="spacingAndGlyphs">SKILL SHOWN</text></svg>';
   return span;
 }

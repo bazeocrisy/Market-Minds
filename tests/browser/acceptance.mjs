@@ -34,15 +34,12 @@ const tapSel = (sel) => L.tap(b, `document.querySelector(${JSON.stringify(sel)})
 const tapText = (re, scope = '#view') => L.tap(b, `[...document.querySelectorAll(${JSON.stringify(scope + ' button, ' + scope + ' a')})].find((x) => ${re}.test(x.textContent.replace(/\\s+/g, ' ').trim()) && x.offsetParent !== null && !x.hidden)`);
 async function tapOk(name, r) { check(`${name}: tap target found and not covered`, r && r.ok, JSON.stringify(r)); await b.wait(150); }
 
-/** Mobile nav: open the menu, tap the link. */
+/** App navigation like a student: a bottom tab if there is one, else More → link. */
 async function navTo(href) {
-  const menuVisible = await q(`getComputedStyle(document.getElementById('menuToggle')).display !== 'none'`);
-  if (menuVisible) {
-    await tapOk('open menu', await tapSel('#menuToggle'));
-    check(`menu opens (aria-expanded) before ${href}`, (await q(`document.getElementById('menuToggle').getAttribute('aria-expanded')`)) === 'true');
-  }
-  await tapOk(`nav ${href}`, await tapSel(`#siteNav a[href="${href}"]`));
-  await b.wait(250);
+  const r = await L.navTo(b, href);
+  check(`nav ${href} via ${r.via}: tap targets found and not covered`, r.ok, JSON.stringify(r));
+  if (r.via === 'more') check(`More sheet opened (aria-expanded) before ${href}`, r.opened === true);
+  check(`nav ${href} reached`, (await q('location.hash')) === href, await q('location.hash'));
 }
 
 // ---------------------------------------------------------------- expected learning evidence
@@ -112,18 +109,24 @@ try {
   await b.load(URL);
   await L.helpers(b);
   const R = await b.js(`const m = await import(new URL('js/content/lessons.js', document.baseURI).href); return m.LESSONS.filter((l) => l.status === 'ready').length;`);
+  const NSK = await b.js(`const m = await import(new URL('js/ui/dom.js', document.baseURI).href); return m.readySkillIds().length;`);
+  const skillsWord = (n) => `${n} ${n === 1 ? 'skill' : 'skills'}`;
   const lessonsMod = `await import(new URL('js/content/lessons.js', document.baseURI).href)`;
 
-  // ================================================================ 1. dashboard, choose grade
+  // ================================================================ 1. first launch: onboarding, choose grade
   check('touch emulation active', await q(`'ontouchstart' in window || navigator.maxTouchPoints > 0`));
   check('375 viewport', (await q('document.documentElement.clientWidth')) === 375);
   check('fresh: store empty', JSON.stringify((await state()).lessons) === '{}' && (await state()).band === null);
-  check('fresh: dashboard h1 asks for grade', (await text('#view h1')) === 'Welcome to Market Minds!', await text('#view h1'));
-  check('fresh: two grade buttons in hero', (await q(`document.querySelectorAll('.grade-choice button[data-band]').length`)) === 2);
+  check('fresh: app opens the onboarding screen', (await q('location.hash')) === '#/welcome', await q('location.hash'));
+  check('fresh: onboarding h1', (await text('#view h1')) === 'Welcome to Market Minds', await text('#view h1'));
+  check('fresh: two grade buttons', (await q(`document.querySelectorAll('#view .welcome-grade[data-band]').length`)) === 2);
+  check('fresh: no app bar or tabs before a grade is chosen', (await q(`getComputedStyle(document.querySelector('.app-bar')).display`)) === 'none');
   check('fresh: no Start button before a grade is chosen', !(await q(`[...document.querySelectorAll('#view a')].some((a) => /Start Learning/.test(a.textContent))`)));
-  await shot('dashboard-fresh');
-  await tapOk('Grades 3–5', await tapSel('.grade-choice button[data-band="explorer"]'));
+  await shot('welcome');
+  await tapOk('Grades 3–5', await tapSel('#view .welcome-grade[data-band="explorer"]'));
+  await b.wait(300);
   check('grade 3–5 saved', (await state()).band === 'explorer');
+  check('onboarding continues to the dashboard', (await q('location.hash')) === '#/', await q('location.hash'));
   check('hero welcomes Market Explorer', (await text('#view h1')) === 'Welcome, Market Explorer!', await text('#view h1'));
   check('header 3–5 pressed', (await q(`document.querySelector('.band-switch [data-band=explorer]').getAttribute('aria-pressed')`)) === 'true');
   check('header 6–8 not pressed', (await q(`document.querySelector('.band-switch [data-band=analyst]').getAttribute('aria-pressed')`)) === 'false');
@@ -133,7 +136,7 @@ try {
   check('fresh dashboard: truthful lessons count', dash0.includes(`0 of ${R} lessons complete`), dash0.slice(0, 300));
   check('fresh dashboard: no misses', dash0.includes('No misses to review yet'));
   check('fresh dashboard: no tests', dash0.includes('No tests taken yet'));
-  check('fresh dashboard: 0 mastered', dash0.includes('0 skills mastered of 8'));
+  check('fresh dashboard: 0 mastered', dash0.includes(`0 of ${skillsWord(NSK)} mastered`), dash0.slice(0, 600));
   await shot('dashboard');
 
   // ================================================================ 2. World 1 Lesson 1
@@ -543,7 +546,7 @@ try {
   check('dashboard lab runs are true', dash.includes('3 practice runs'));
   check('dashboard thinking is true', dash.includes('Not started yet'));
   const mastered = await b.js(`const e = await import(new URL('js/engine/index.js', document.baseURI).href); const st = window.__mm.store.get(); return Object.keys(st.skills).filter((id) => e.masteryFor(st, id).level === 'mastered').length;`);
-  check('dashboard mastered is true', dash.includes(`${mastered} skill${mastered === 1 ? '' : 's'} mastered of 8`), String(mastered));
+  check('dashboard mastered is true', dash.includes(`${mastered} of ${skillsWord(NSK)} mastered`), `${mastered} | ${dash.slice(0, 600)}`);
   await shot('dashboard-returning');
   await tapOk('Continue Learning', await tapText('/Continue Learning/'));
   check('Continue Learning opens saved lesson', (await text('#view h1')) === w1l2Title && (await q('location.hash')) === '#/learn/w1l2/3');
@@ -567,10 +570,12 @@ try {
   await shot('progress');
 
   // ================================================================ 8. Grades 6–8 path
-  await b.js('localStorage.clear();');
+  await b.js('localStorage.clear(); sessionStorage.clear();');
   await b.load(URL);
   await L.helpers(b);
-  await tapOk('Grades 6–8', await tapSel('.grade-choice button[data-band="analyst"]'));
+  check('6–8: cleared storage opens onboarding again', (await q('location.hash')) === '#/welcome', await q('location.hash'));
+  await tapOk('Grades 6–8', await tapSel('#view .welcome-grade[data-band="analyst"]'));
+  await b.wait(300);
   check('6–8 saved', (await state()).band === 'analyst');
   check('6–8 hero', (await text('#view h1')) === 'Welcome, Market Analyst!');
   await tapOk('6–8 Start Learning', await tapText('/Start Learning/'));
@@ -620,6 +625,204 @@ try {
   check('6–8 practice answers accepted', analystOk >= 4, String(analystOk));
   const explorerPct = await b.js(`const e = await import(new URL('js/engine/index.js', document.baseURI).href); let n = 0; for (let i = 0; i < 60; i++) { const qq = e.generateQuestion('price-change-math', { band: 'explorer', difficulty: 'challenge', seed: i + 1 }); if (qq.unit === '%') n++; } return n;`);
   check('3–5 band never gets percent-change questions (60 samples)', explorerPct === 0, String(explorerPct));
+  await tapText('/^End session$/');
+
+  // ================================================================ 9. Batch 2 (Grades 6–8): World 4 candlestick lesson end-to-end
+  const w4 = await b.js(`const m = ${lessonsMod}; const l = m.lessonById('w4l2'); return JSON.parse(JSON.stringify({ title: l.title, steps: l.steps.map((s) => ({ kind: s.kind, together: s.steps?.analyst, question: s.question?.analyst })) }));`);
+  await navTo('#/learn');
+  check('Learn lists World 4 lesson 2 as ready', await q(`!!document.querySelector('#view a[href^="#/learn/w4l2"]')`));
+  await tapOk('open w4l2 from Learn', await L.tap(b, `document.querySelector('#view a[href^="#/learn/w4l2"]')`));
+  await b.wait(300);
+  if (((await text('#view .lesson-step h2')) || '') === 'Want a quick warm-up first?') {
+    check('w4l2 offers the optional warm-up (prereq line-chart-reading not mastered)', true);
+    await tapOk('w4l2 skip warm-up', await tapText('/^Skip warm-up$/'));
+  }
+  check('w4l2 step 1', (await q('location.hash')) === '#/learn/w4l2/1', await q('location.hash'));
+  check('w4l2 h1', (await text('#view h1')) === w4.title, await text('#view h1'));
+  check('w4l2 Read to Me present', await q(`!!document.querySelector('#view .read-to-me')`));
+  check('w4l2 placeholder art has a text alternative', ((await text('#view .placeholder-art .ph-alt')) || '').length > 20, await text('#view .placeholder-art'));
+  check('w4l2 analyst text (OHLC wording)', ((await text('#view .lesson-body')) || '').includes('candle'), (await text('#view .lesson-body'))?.slice(0, 120));
+  await tapOk('w4l2 next 2', await tapSel('#view nav.lesson-nav a.btn-primary'));
+  check('w4l2 step 2 definition term', (await text('#view .definition-card .term-name')) === 'candlestick', await text('#view .definition-card .term-name'));
+  await tapOk('w4l2 next 3', await tapSel('#view nav.lesson-nav a.btn-primary'));
+  check('w4l2 step 3 candle chart', (await q(`document.querySelectorAll('#view figure.mm-visual--candles .mm-visual__candle').length`)) === 3);
+  const candAx = await L.axOf(b, '#view figure.mm-visual--candles svg');
+  check('w4l2 candle chart accessible name says how many up and down', /\b2 up\b/.test(candAx?.name || '') && /\b1 down\b/.test(candAx?.name || '') && ['img', 'image'].includes(candAx.role), JSON.stringify(candAx));
+  check('w4l2 candle chart has a legend (shape, not only colour)', /hollow body, ▲/.test((await text('#view .mm-visual__legend')) || ''), await text('#view .mm-visual__legend'));
+  check('w4l2 candle chart has a data table', (await q(`document.querySelectorAll('#view figure.mm-visual--candles table tbody tr').length`)) === 3);
+  const swL = await q(`Math.max(...[...document.querySelectorAll('#view .mm-visual__swatch')].map((e) => Math.max(e.getBoundingClientRect().width, e.getBoundingClientRect().height)))`);
+  check('w4l2 candle legend swatches are small icons (≤ 24px), not full-width shapes', swL > 0 && swL <= 24, `largest swatch ${swL}px`);
+  await shot('lesson-candles');
+  await tapOk('w4l2 next 4', await tapSel('#view nav.lesson-nav a.btn-primary'));
+  const tg4 = w4.steps[3].together;
+  for (let i = 0; i < tg4.length; i++) {
+    const wrong = tg4[i].choices.find((c) => !c.correct), right = tg4[i].choices.find((c) => c.correct);
+    if (i === 0) {
+      await L.tap(b, `[...document.querySelectorAll('#view .together-q .choice')].find((x) => x.textContent === ${JSON.stringify(wrong.text)})`);
+      check('w4l2 together: wrong answer coached, no advance', /is-wrong/.test(await q(`document.querySelector('#view .together-q .coach').className`)) && !(await q(`[...document.querySelectorAll('#view .together-q button')].some((x) => /Next question/.test(x.textContent))`)));
+    }
+    await tapOk(`w4l2 together ${i + 1} right`, await L.tap(b, `[...document.querySelectorAll('#view .together-q .choice')].find((x) => x.textContent === ${JSON.stringify(right.text)})`));
+    check(`w4l2 together ${i + 1} confirmed`, /is-correct/.test(await q(`document.querySelector('#view .together-q .coach').className`)));
+    if (i < tg4.length - 1) await tapText('/Next question/', '#view .together-q');
+  }
+  await tapOk('w4l2 next 5', await tapSel('#view nav.lesson-nav a.btn-primary'));
+  const cq4 = w4.steps[4].question;
+  check('w4l2 check shows its own candle', (await q(`document.querySelectorAll('#view .lesson-body figure.mm-visual--candles .mm-visual__candle').length`)) === 1);
+  await tapOk('w4l2 check hint', await tapText('/Hint/', '#view .q-actions'));
+  check('w4l2 check hint shown', ((await text('#view .hint-list li')) || '').includes(plainify(cq4.hints[0]).slice(0, 25)), await text('#view .hint-list li'));
+  const cw4 = cq4.choices.find((c) => c.id !== cq4.answer && c.misconception);
+  await L.tap(b, `document.querySelector('#view .choices [data-id="${cw4.id}"]')`);
+  await tapText('/^Check$/', '#view .q-actions');
+  fb = await b.js(`const f = document.querySelector('#view .lesson-body .feedback'); return { cls: f.className, text: f.innerText.replace(/\\s+/g, ' ') };`);
+  check('w4l2 check: wrong → misconception coaching', /is-wrong/.test(fb.cls) && fb.text.includes(plainify(cq4.misconceptions[cw4.misconception]).slice(0, 30)), fb.text);
+  await L.tap(b, `document.querySelector('#view .choices [data-id="${cq4.answer}"]')`);
+  await tapText('/^Check$/', '#view .q-actions');
+  check('w4l2 check: right → confirmed', /is-correct/.test(await q(`document.querySelector('#view .lesson-body .feedback').className`)));
+  await tapOk('w4l2 next 6', await tapSel('#view nav.lesson-nav a.btn-primary'));
+  s = await state();
+  check('w4l2 complete in store', s.lessons.w4l2?.completed === true, JSON.stringify(s.lessons.w4l2));
+  check('w4l2 introduces candlestick-reading without mastery evidence', s.skills['candlestick-reading']?.introduced === true && s.skills['candlestick-reading'].independent.attempts === 0, JSON.stringify(s.skills['candlestick-reading']));
+  check('w4l2 step 6 links to practice candlestick-reading', await q(`[...document.querySelectorAll('#view a[href^="#/practice"]')].some((a) => /candlestick-reading|w4l2/.test(a.getAttribute('href')))`), await q(`[...document.querySelectorAll('#view a[href^="#/practice"]')].map((a) => a.getAttribute('href')).join()`));
+
+  // ---------------------------------------------------------------- practice candlestick-reading: a hint, then a correct first try
+  await route('#/practice?skill=candlestick-reading');
+  check('practice deep link preselects candlestick-reading', (await q(`document.getElementById('pr-skill').value`)) === 'candlestick-reading', await q(`document.getElementById('pr-skill').value`));
+  check('practice world follows the skill (World 4)', /4/.test(await q(`document.getElementById('pr-world').selectedOptions[0].textContent`)), await q(`document.getElementById('pr-world').selectedOptions[0].textContent`));
+  await tapOk('candles Start practice', await tapText('/^Start practice$/'));
+  const k1 = await cur();
+  check('candles Q1 is candlestick-reading, analyst band', k1 && k1.skill === 'candlestick-reading' && k1.key.includes('|analyst|') && k1.prompt === k1.shown, JSON.stringify(k1 && [k1.key, k1.prompt, k1.shown]));
+  await tapOk('candles Q1 hint', await tapText('/Hint \\(/', '#view .q-actions'));
+  const kh = await b.js(`return [...${ROOT}.querySelectorAll('.hint-list li')].map((x) => x.innerText.replace(/\\s+/g, ' '));`);
+  check('candles Q1 hint shown and does not reveal the answer', kh.length === 1 && !revealsAnswer(kh[0], k1), JSON.stringify(kh) + ' | ' + k1?.answerText);
+  await respond('right');
+  check('candles Q1 correct after hint', /is-correct/.test((await fbText()).cls));
+  await nextQuestion();
+  const k2 = await cur();
+  check('candles Q2 new candlestick question', k2 && k2.key !== k1.key && k2.skill === 'candlestick-reading');
+  await respond('right');
+  check('candles Q2 correct first try', /is-correct/.test((await fbText()).cls));
+  s = await state();
+  const cs = s.skills['candlestick-reading'];
+  check('candlestick-reading evidence: 1 on own, 1 with help', cs && cs.independent.correct === 1 && cs.independent.attempts === 1 && cs.assisted.correct === 1 && cs.assisted.attempts === 1 && cs.revealed === 0, JSON.stringify(cs));
+  await tapText('/^End session$/');
+
+  // ---------------------------------------------------------------- World 2 test with a deliberate score
+  await route('#/test/world-2');
+  check('World 2 test intro', /World 2|world/i.test((await text('#view h1')) || ''), await text('#view h1'));
+  const w2acc0 = await q('window.__qa.accepted.length');
+  await tapOk('World 2 Start test', await tapText('/^Start test$/'));
+  const n2 = Number(((await text('#view h1')) || '').match(/of (\d+)/)?.[1] || 0);
+  check('World 2 test has questions', n2 >= 6, await text('#view h1'));
+  const w2items = await b.js(`return window.__qa.accepted.slice(-${n2}).map((q) => ({ key: q.key, skill: q.skill }));`);
+  check('World 2 test generated exactly n new questions', (await q('window.__qa.accepted.length')) - w2acc0 === n2);
+  const w2skills = await b.js(`const m = await import(new URL('js/content/skills.js', document.baseURI).href); return Object.values(m.SKILLS).filter((x) => x.world === 2).map((x) => x.id);`);
+  check('World 2 test only uses World 2 skills', w2items.every((it) => w2skills.includes(it.skill)), JSON.stringify(w2items.map((i) => i.skill)));
+  check('World 2 test covers lessons 2–4 skills', ['futures-standardization', 'hedgers-speculators', 'offset-delivery'].some((sId) => w2items.some((i) => i.skill === sId)), JSON.stringify([...new Set(w2items.map((i) => i.skill))]));
+  const RIGHT2 = Math.min(3, n2);
+  for (let i = 0; i < n2; i++) {
+    const shown = await b.js(`return __qh.norm(document.querySelector('#view .q-prompt')?.textContent);`);
+    const exp2 = await b.js(`return __qh.plain(window.__qa.accepted[window.__qa.accepted.length - ${n2} + ${i}].prompt);`);
+    check(`World 2 test Q${i + 1} renders the generated item`, shown === exp2, `${shown} | ${exp2}`);
+    await b.js(`const root = document.querySelector('#view .lesson-step'); const q = window.__qa.accepted[window.__qa.accepted.length - ${n2} + ${i}];
+      __qh.fill(root, q, ${i < RIGHT2 ? '__qh.rightResponse(q)' : '__qh.wrongResponse(q)'});`);
+    await b.wait(80);
+    if (i < n2 - 1) await tapText('/^Next →$/');
+  }
+  await tapOk('World 2 Submit', await tapText('/^Submit test$/'));
+  await b.wait(300);
+  check('World 2 score equals the deliberate number right', (await text('#view .score-big')) === `${RIGHT2} of ${n2}`, await text('#view .score-big'));
+  s = await state();
+  const t2 = s.tests[s.tests.length - 1];
+  check('World 2 test saved with scope world-2', t2 && t2.scope === 'world-2' && t2.score === RIGHT2 && t2.total === n2, JSON.stringify(t2));
+  check('World 2 results show every question with an explanation', (await q(`[...document.querySelectorAll('#view .result-item')].filter((x) => x.innerText.includes('Why')).length`)) === n2);
+
+  // ---------------------------------------------------------------- Market Lab: Pattern Trap, Line/Candles toggle, Long or Short
+  await route('#/market-lab?activity=paper&scenario=pretend-rice-pattern-trap');
+  check('Pattern Trap scenario opens from its link', ((await text('#view .lab-activity-title')) || '').includes('Pretend Rice'), await text('#view .lab-activity-title'));
+  const rice = sc.find((x) => x.id === 'pretend-rice-pattern-trap') || (await b.js(`const m = await import(new URL('js/content/market-scenarios.js', document.baseURI).href); return JSON.parse(JSON.stringify(m.scenarioById('pretend-rice-pattern-trap')));`));
+  await L.tap(b, `document.querySelector('input[name="pp-side"][value="long"]').closest('label')`);
+  await b.js(`const t = document.querySelector('#view .lab-body textarea'); t.value = 'Three days up, but I know a pattern is not a promise.'; t.dispatchEvent(new Event('input'));`);
+  await tapOk('rice start', await tapText('/^Start the pretend days$/'));
+  await tapOk('rice day 1', await tapText('/^Go to Day/'));
+  await tapOk('rice day 2', await tapText('/^Go to Day/'));
+  check('Long or Short panel appears', ((await text('#view .lab-longshort h4')) || '') === 'Long or Short?', await text('#view .lab-longshort'));
+  const lsRows = await b.js(`return [...document.querySelectorAll('#view .lab-longshort tbody tr')].map((r) => r.innerText.replace(/\\s+/g, ' '));`);
+  const d2 = Math.round((rice.days[1].price - rice.days[0].price) * 100) / 100;
+  check('Long or Short: long gains and short loses the same amount on an up day', lsRows.length === 2 && /Long/.test(lsRows[0]) && lsRows[0].includes(`+$${d2.toFixed(2)}`) && /gain/.test(lsRows[0]) && /Short/.test(lsRows[1]) && /loss/.test(lsRows[1]), JSON.stringify(lsRows));
+  // Line → Candles with the keyboard: focus must stay on the toggle
+  await b.js(`document.querySelector('#view .lab-chart-toggle input[value="line"]').focus();`);
+  check('chart toggle starts on Line', await q(`document.querySelector('#view .lab-chart-toggle input[value="line"]').checked`));
+  await L.press(b, 'ArrowRight'); await b.wait(150);
+  check('Candles toggle: Arrow key selects Candles', await q(`document.querySelector('#view .lab-chart-toggle input[value="candles"]').checked`));
+  check('Candles toggle: focus stays on the toggle', await q(`document.activeElement === document.querySelector('#view .lab-chart-toggle input[value="candles"]')`), await q('document.activeElement.outerHTML.slice(0, 100)'));
+  check('Candles toggle: candle chart drawn', (await q(`document.querySelectorAll('#view .lab-chart figure.mm-visual--candles .mm-visual__candle').length`)) === 2);
+  const labAx = await L.axOf(b, '#view .lab-chart figure.mm-visual--candles svg');
+  check('Candles toggle: chart accessible name mentions up/down', /\bup\b/.test(labAx?.name || '') && /\bdown\b/.test(labAx?.name || ''), JSON.stringify(labAx));
+  check('Candles toggle: legend group named "Chart"', ((await L.axOf(b, '#view .lab-chart-toggle'))?.name || '') === 'Chart', JSON.stringify(await L.axOf(b, '#view .lab-chart-toggle')));
+  const swM = await q(`Math.max(...[...document.querySelectorAll('#view .mm-visual__swatch')].map((e) => Math.max(e.getBoundingClientRect().width, e.getBoundingClientRect().height)))`);
+  check('Market Lab candle legend swatches are small icons (≤ 24px)', swM > 0 && swM <= 24, `largest swatch ${swM}px`);
+  await shot('market-lab-candles');
+  await L.tap(b, `document.querySelector('#view .lab-chart-toggle input[value="line"]').closest('label')`);
+  check('Line toggle by tap redraws a line chart', await q(`!!document.querySelector('#view .lab-chart figure.mm-visual--line') && !document.querySelector('#view .lab-chart figure.mm-visual--candles')`));
+  for (let i = 0; i < 12; i++) { const g = await tapText('/^Go to Day/'); if (!g || !g.ok) break; }
+  const trap = await text('#view .lab-pattern-note');
+  check('Pattern Trap reflection appears at the end', /^Pattern Trap\./.test(trap || ''), trap);
+  check('reflection questions shown', (await q(`!!document.querySelector('#view .lab-reflection')`)));
+
+  // ---------------------------------------------------------------- Certificates
+  // (a) nothing earned yet
+  const certState0 = { version: 1, band: 'analyst' };
+  await b.js(`localStorage.setItem('mm.progress.v1', ${JSON.stringify(JSON.stringify(certState0))});`);
+  await b.load('about:blank'); await b.load(URL + '#/certificates');   // a new document, so the store re-reads storage
+  await L.helpers(b);
+  check('certificates h1', (await text('#view h1')) === 'Achievement Certificates', await text('#view h1'));
+  check('certificates: none earned with an empty store', /^0 of \d+/.test((await text('#view .stats .stat')) || '') && (await q(`document.querySelectorAll('#view .cert-card.is-earned').length`)) === 0, await text('#view .stats'));
+  check('certificates: says none earned yet', ((await viewText()) || '').includes('No certificates earned yet'));
+  check('certificates: every card says what is still needed', (await q(`[...document.querySelectorAll('#view .cert-card')].every((c) => /Still needed/.test(c.innerText))`)));
+  await route('#/certificates/world-1');
+  check('locked certificate print view says not earned', (await text('#view h1')) === 'Not earned yet' && /isn’t earned yet, so it can’t be printed/.test((await viewText()) || ''), await viewText());
+  check('locked certificate has no printable certificate or Print button', !(await q(`!!document.querySelector('#view .certificate')`)) && !(await q(`[...document.querySelectorAll('#view button')].some((x) => /Print/.test(x.textContent))`)));
+  // (b) World 1 earned. Lessons completed are WRITTEN to the store (lesson walk-through is covered above);
+  //     every World 1 skill is mastered through REAL independent answers in Practice (5 right, first try, no hints).
+  const w1 = await b.js(`const m = ${lessonsMod}; const ls = m.LESSONS.filter((l) => l.world === 1 && l.status === 'ready'); return { ids: ls.map((l) => l.id), skills: [...new Set(ls.flatMap((l) => l.skills))] };`);
+  const now = Date.now();
+  const certState1 = { version: 1, band: 'analyst', lessons: Object.fromEntries(w1.ids.map((id) => [id, { step: 6, maxStep: 6, completed: true, completedAt: now }])) };
+  await b.js(`localStorage.setItem('mm.progress.v1', ${JSON.stringify(JSON.stringify(certState1))});`);
+  await b.load('about:blank'); await b.load(URL + '#/practice');
+  await L.helpers(b);
+  for (const skillId of w1.skills) {
+    await route(`#/practice?skill=${skillId}`);
+    check(`cert prep: ${skillId} preselected`, (await q(`document.getElementById('pr-skill').value`)) === skillId);
+    await tapText('/^Start practice$/');
+    for (let i = 0; i < 5; i++) {
+      const c = await cur();
+      if (!c || c.skill !== skillId) { check(`cert prep: ${skillId} Q${i + 1} is that skill`, false, JSON.stringify(c && [c.skill, c.key])); break; }
+      await respond('right');
+      if (!/is-correct/.test((await fbText()).cls)) check(`cert prep: ${skillId} Q${i + 1} correct`, false, (await fbText()).text);
+      if (i < 4) await nextQuestion();
+    }
+    await tapText('/^End session$/');
+  }
+  const lv = await b.js(`const e = await import(new URL('js/engine/index.js', document.baseURI).href); const st = window.__mm.store.get(); return Object.fromEntries(${JSON.stringify(w1.skills)}.map((id) => [id, e.masteryFor(st, id).level]));`);
+  check('cert prep: every World 1 skill mastered by real answers', Object.values(lv).every((x) => x === 'mastered'), JSON.stringify(lv));
+  await navTo('#/certificates');
+  check('World 1 certificate earned', await q(`[...document.querySelectorAll('#view .cert-card.is-earned')].some((c) => /World 1/.test(c.innerText))`), await text('#view .cert-list'));
+  check('World 1 Skill Badges earned', (await q(`[...document.querySelectorAll('#view .cert-card.is-earned')].filter((c) => /Skill Badge/.test(c.innerText)).length`)) === w1.skills.length);
+  check('other worlds not earned', (await q(`[...document.querySelectorAll('#view .cert-card.is-earned')].filter((c) => /World [2-6]/.test(c.querySelector('h3').textContent)).length`)) === 0);
+  await tapOk('View and print World 1', await L.tap(b, `document.querySelector('#view a[href="#/certificates/world-1"]')`));
+  await b.wait(300);
+  check('printable certificate shown', await q(`!!document.querySelector('#view .certificate')`));
+  const nameLine = await b.js(`const n = document.querySelector('#view .cert-name'); const l = n?.querySelector('.cert-line'); return n ? { text: n.innerText.replace(/\\s+/g, ' ').trim(), line: l ? l.textContent : null } : null;`);
+  check('certificate has a blank Name line', nameLine && nameLine.text === 'Name:' && nameLine.line === '', JSON.stringify(nameLine));
+  check('Name line is announced as a blank line', /blank line/.test((await L.axOf(b, '#view .cert-line'))?.name || ''), JSON.stringify(await L.axOf(b, '#view .cert-line')));
+  const stored = await q(`localStorage.getItem('mm.progress.v1')`);
+  check('no name stored anywhere', !/"name"\s*:/.test(stored) && !/"studentName"|"learnerName"/.test(stored), stored.slice(0, 200));
+  check('certificate names World 1 and its skills', /World 1/.test((await text('#view .cert-subject')) || '') && ((await text('#view .cert-skills')) || '').split('·').length === w1.skills.length, `${await text('#view .cert-subject')} | ${await text('#view .cert-skills')}`);
+  check('Print button present', await q(`[...document.querySelectorAll('#view button')].some((x) => x.textContent === 'Print certificate')`));
+  await b.send('Emulation.setEmulatedMedia', { media: 'print' });
+  check('print: app bar, tabs and buttons hidden; certificate visible', await q(`getComputedStyle(document.querySelector('.app-bar')).display === 'none' && getComputedStyle(document.querySelector('.app-tabs')).display === 'none' && getComputedStyle(document.querySelector('#view .certificate')).display !== 'none'`));
+  await b.send('Emulation.setEmulatedMedia', { media: '' });
+  await shot('certificate-earned');
 
   check('no console errors during the walk-through', b.errors.length === 0, b.errors.join(' | '));
   check('no 404s', server.missing.length === 0, server.missing.join());

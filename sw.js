@@ -2,7 +2,7 @@
 // - CACHE_VERSION is a content hash written by scripts/update-sw.mjs; a new version deletes every older cache.
 // - Network-first for all same-origin GETs: online learners always get the newest files; the cache is only a fallback.
 // - Progress lives in localStorage and is never touched here.
-const CACHE_VERSION = 'ef59bdf05e60';
+const CACHE_VERSION = '24248cfcda6c';
 const CACHE = `mm-${CACHE_VERSION}`;
 const PRECACHE = [
   './',
@@ -94,7 +94,9 @@ self.addEventListener('fetch', (event) => {
     } catch {
       const hit = await cache.match(req, { ignoreSearch: true });
       if (hit) return hit;
-      if (req.mode === 'navigate') {
+      const scopePath = new URL(self.registration.scope).pathname;
+      const isAppPage = url.pathname === scopePath || url.pathname === `${scopePath}index.html`;
+      if (req.mode === 'navigate' && isAppPage) {
         const shell = await cache.match('./index.html') || await cache.match('./');
         if (shell) return shell;
       }

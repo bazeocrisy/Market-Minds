@@ -10,11 +10,8 @@ const GRADES = [
 
 export function render(el, params, ctx) {
   let timer = null;
-  const choose = () => {
-    // Runs after app.js's [data-band] click handler has saved the grade.
-    clearTimeout(timer);
-    timer = setTimeout(() => { if (ctx.store.get().band) ctx.go('#/'); }, 0);
-  };
+  // app.js's [data-band] click handler saves the grade and continues to the learner's intended screen.
+  const choose = () => {};
   const current = ctx.store.get().band;
   el.append(h('section', { class: 'welcome' },
     h('div', { class: 'welcome-inner' },

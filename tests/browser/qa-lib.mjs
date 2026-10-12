@@ -173,4 +173,31 @@ export async function press(b, key, shift = false) {
 /** Navigate by hash inside the app and wait for the view to render. */
 export async function route(b, hash, ms = 350) { await b.js(`location.hash = ${JSON.stringify(hash)};`); await b.wait(ms); }
 
+/** Load the app with an exact stored state (null = brand-new learner: storage cleared, no grade). */
+export async function seed(b, url, obj) {
+  await b.load(url);
+  await b.js(`localStorage.clear(); sessionStorage.clear(); ${obj ? `localStorage.setItem('mm.progress.v1', ${JSON.stringify(JSON.stringify(obj))});` : ''}`);
+  await b.load(url);
+}
+
+/**
+ * App-shell navigation the way a student does it: a visible primary tab (.app-tabs a[data-nav], bottom
+ * tab bar on phones / top nav ≥768px) if there is one, else the "More" sheet (#menuToggle → #siteNav).
+ * Returns { via, ok, opened } so callers can assert on it.
+ */
+export async function navTo(b, href) {
+  const tabSel = `.app-tabs a[href="${href}"]`;
+  const tabVisible = await b.js(`const a = document.querySelector(${JSON.stringify(tabSel)}); return !!a && a.offsetParent !== null && a.getBoundingClientRect().width > 0;`);
+  if (tabVisible) {
+    const r = await tap(b, `document.querySelector(${JSON.stringify(tabSel)})`);
+    await b.wait(250);
+    return { via: 'tab', ok: !!r?.ok, r };
+  }
+  const t = await tap(b, `document.getElementById('menuToggle')`);
+  const opened = await b.js(`return document.getElementById('menuToggle').getAttribute('aria-expanded') === 'true';`);
+  const r = await tap(b, `document.querySelector('#siteNav a[href="${href}"]')`);
+  await b.wait(250);
+  return { via: 'more', ok: !!t?.ok && !!r?.ok, opened, r };
+}
+
 export const text = (b, sel) => b.js(`const e = document.querySelector(${JSON.stringify(sel)}); return e ? e.textContent.replace(/\\s+/g, ' ').trim() : null;`);

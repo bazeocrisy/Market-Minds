@@ -241,8 +241,8 @@ body { min-height: 100vh; min-height: 100dvh; }
   .more-labs { display: none; }
   .app-tabs { border-top: 1px solid var(--line); }
   .app-tabs ul { max-width: var(--max); margin: 0 auto; padding: 0 var(--s3); gap: 2px; }
-  .app-tabs li { flex: 0 0 auto; }
-  .app-tabs a { flex-direction: row; gap: var(--s2); min-height: 48px; padding: 0 var(--s3); font-size: .96875rem; color: var(--ink-2); }
+  .app-tabs li { flex: 0 1 auto; min-width: 0; }
+  .app-tabs a { flex-direction: row; gap: var(--s2); min-height: 48px; padding: 0 var(--s3); font-size: .96875rem; color: var(--ink-2); white-space: nowrap; }
   .app-tabs svg { width: 20px; height: 20px; }
   .app-tabs a:hover { box-shadow: inset 0 -3px 0 var(--line-strong); }
   .app-tabs a[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--teal); }
@@ -723,7 +723,7 @@ dialog.modal[open]:not(:modal) { position: fixed; inset: 0; margin: auto; z-inde
 .mm-visual__table td { text-align: right; font-variant-numeric: tabular-nums; }
 .mm-visual__legend { list-style: none; padding: 0; margin: var(--s3) 0 0; font-size: var(--fs-sm); color: var(--ink-2); display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); }
 .mm-visual__legend li { display: inline-flex; align-items: center; gap: var(--s2); margin: 0; }
-.mm-visual__swatch { flex: none; width: 20px; height: 20px; }
+.mm-visual__swatch, .visual svg.mm-visual__swatch { flex: none; width: 20px; height: 20px; }
 .mm-visual--empty { display: none; }
 .mm-pricetags { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--s3); }
 .mm-pricetag {
@@ -895,3 +895,10 @@ dialog.modal[open]:not(:modal) { position: fixed; inset: 0; margin: auto; z-inde
 .lab-chart-empty { color: var(--muted); font-style: italic; padding: var(--s3) 0; }
 .lab-longshort { margin-top: var(--s4); }
 .lab-longshort h4 { font-size: 1rem; margin: 0 0 var(--s2); }
+
+/* Tablet widths: the 7-tab top nav fits without sideways scrolling (QA round 2, M2). */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-tabs ul { padding: 0 var(--s2); gap: 0; justify-content: space-between; }
+  .app-tabs a { padding: 0 var(--s2); gap: 6px; font-size: .875rem; }
+  .app-tabs svg { width: 18px; height: 18px; }
+}

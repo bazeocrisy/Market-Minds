@@ -42,7 +42,8 @@ async function route(opts = {}) {
   if (!name) { location.replace('#/'); return; }
   // App-first launch: until a grade is chosen, every route opens the onboarding screen.
   if (!store.get().band && name !== 'welcome') {
-    if (location.hash && location.hash !== '#/') session.set(AFTER_WELCOME, location.hash);
+    // Remember only THIS launch's destination (a plain launch clears any older one).
+    session.set(AFTER_WELCOME, location.hash && location.hash !== '#/' ? location.hash : null);
     location.replace('#/welcome');
     return;
   }
@@ -89,7 +90,7 @@ document.addEventListener('click', (e) => {
     store.setBand(b.dataset.band);
     const next = session.get(AFTER_WELCOME) || '#/';
     session.set(AFTER_WELCOME, null);
-    go(next === '#/welcome' ? '#/' : next);
+    location.replace(next === '#/welcome' ? '#/' : next);
     return;
   }
   if (store.get().band !== b.dataset.band) {

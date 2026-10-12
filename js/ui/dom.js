@@ -241,7 +241,7 @@ if (typeof document !== 'undefined' && !globalThis.__mmSkipBound) {
     if (!t || !s) return;
     if (t.contains(e.target)) {
       // app.js's listener on the button itself has already toggled it (it runs before this document listener).
-      if (isOpen()) s.querySelector('a[href]')?.focus();
+      if (isOpen()) [...s.querySelectorAll('a[href]')].find((a) => a.offsetParent !== null)?.focus();
       return;
     }
     if (isOpen() && (!s.contains(e.target) || e.target.closest?.('a[href]'))) closeSheet();
