@@ -16,6 +16,20 @@ const viewEl = document.getElementById('view');
 let cleanup = null;
 let renderId = 0;
 // PWA state (declared before the first route() call, which reads it).
+// Screens that can hold unfinished work report it via pendingWork() → null | { kind, label, resume }.
+const WORK_VIEWS = ['practice', 'test', 'journal', 'thinking', 'learn'];
+/** Everything unfinished right now (an active practice session, a test in progress, unsaved drafts). */
+async function pendingWork() {
+  const found = [];
+  for (const n of WORK_VIEWS) {
+    try {
+      const m = await import(`./views/${n}.js`);
+      const w = typeof m.pendingWork === 'function' ? m.pendingWork() : null;
+      if (w) found.push(w);
+    } catch { /* a screen that failed to load holds no work */ }
+  }
+  return found;
+}
 const pwa = { updateReady: false, online: navigator.onLine !== false, preloaded: false, installable: false, installed: false, persisted: null };
 const AFTER_WELCOME = 'mm.afterWelcome';   // where a first-time learner was heading (sessionStorage)
 const session = {
@@ -49,7 +63,8 @@ async function route(opts = {}) {
     location.replace('#/welcome');
     return;
   }
-  if (pwa.updateReady && name === 'dashboard' && !opts.initial) { location.reload(); return; }
+  if (pwa.updateReady && name === 'dashboard' && !opts.initial && (await pendingWork()).length === 0) { location.reload(); return; }
+  if (id !== renderId) return;
   document.documentElement.dataset.route = name;
   let mod;
   try { mod = await import(`./views/${name}.js`); } catch (e) {
@@ -144,17 +159,25 @@ function preloadViews() {
 }
 
 const statusEl = document.getElementById('appStatus');
-function paintStatus() {
+const joinLabels = (ws) => ws.map((w) => w.label).filter((v, i, a) => a.indexOf(v) === i).join(' and ');
+async function paintStatus() {
   if (!statusEl) return;
+  const pending = pwa.updateReady ? await pendingWork() : [];
   statusEl.replaceChildren();
   let kind = null;
   if (pwa.updateReady) {
     kind = 'update';
     const msg = document.createElement('span');
-    msg.textContent = 'A new version of Market Minds is ready. It will load next time you go Home.';
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'btn btn-sm'; btn.dataset.action = 'apply-update'; btn.textContent = 'Refresh now';
-    statusEl.append(msg, ' ', btn);
+    if (pending.length) {
+      // Never interrupt: no refresh button until the unfinished work is done.
+      msg.textContent = `A new version of Market Minds is ready. It will load after you finish ${joinLabels(pending)} — nothing you're doing will be lost.`;
+      statusEl.append(msg);
+    } else {
+      msg.textContent = 'A new version of Market Minds is ready. It will load next time you go Home.';
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'btn btn-sm'; btn.dataset.action = 'apply-update'; btn.textContent = 'Refresh now';
+      statusEl.append(msg, ' ', btn);
+    }
   } else if (!pwa.online) {
     kind = 'offline';
     const msg = document.createElement('span');
@@ -164,7 +187,13 @@ function paintStatus() {
   statusEl.hidden = !kind;
   if (kind) statusEl.dataset.kind = kind; else delete statusEl.dataset.kind;
 }
-document.addEventListener('click', (e) => { if (e.target.closest('[data-action="apply-update"]')) location.reload(); });
+document.addEventListener('click', async (e) => {
+  if (!e.target.closest('[data-action="apply-update"]')) return;
+  // Re-check at the moment of the tap: if work started since the notice appeared, don't reload.
+  if ((await pendingWork()).length) { paintStatus(); return; }
+  location.reload();
+});
+document.addEventListener('mm:work-changed', () => { if (pwa.updateReady) paintStatus(); });
 window.addEventListener('online', () => { pwa.online = true; paintStatus(); });
 window.addEventListener('offline', () => { pwa.online = false; paintStatus(); });
 
@@ -221,4 +250,4 @@ paintInstall();
 keepProgress();
 
 // Test hook (read-only use in browser tests).
-window.__mm = { store, go, parseHash, pwa };
+window.__mm = { store, go, parseHash, pwa, pendingWork, paintStatus };

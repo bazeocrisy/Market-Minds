@@ -1,6 +1,7 @@
 // Shared helpers for the QA browser suites (acceptance, a11y, robustness). Agent 5 owns this file.
 // Nothing here edits app code: it only observes the page through CDP and in-page instrumentation.
 import path from 'node:path';
+import fs from 'node:fs';
 import { ROOT } from '../lib/harness.mjs';
 
 export const SHOT_DIR = process.env.SHOT_DIR || path.join(ROOT, 'tests', 'screenshots');
@@ -9,6 +10,7 @@ export const SHOT_DIR = process.env.SHOT_DIR || path.join(ROOT, 'tests', 'screen
 export function counter(suite) {
   const c = { suite, pass: 0, fail: 0, failures: [] };
   c.check = (name, ok, detail = '') => {
+    if (process.env.CHECK_LOG) fs.appendFileSync(process.env.CHECK_LOG, `${name}\n`);   // optional: list every check (to compare runs)
     if (ok) c.pass++;
     else { c.fail++; c.failures.push(`${name}${detail !== '' ? ' :: ' + String(detail).slice(0, 400) : ''}`); console.log('FAIL', name, detail !== '' ? '::' : '', String(detail).slice(0, 400)); }
     return !!ok;

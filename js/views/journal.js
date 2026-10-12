@@ -10,6 +10,24 @@ const FIELDS = [
   { key: 'learned', label: 'What did you learn?', hint: 'What would you do the same or differently next time?' }
 ];
 
+// Unsaved draft: kept in sessionStorage so going Home and back, or a refresh, never loses it.
+// Text only, no names (the notice asks learners not to write personal details).
+const DRAFT_KEY = 'mm.draft.journal';
+function readDraft() {
+  try { const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); return d && typeof d === 'object' ? d : null; } catch { return null; }
+}
+function writeDraft(d) {
+  try { if (d) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); else sessionStorage.removeItem(DRAFT_KEY); } catch { /* storage blocked */ }
+}
+// The lesson dropdown alone is not "work" (a ?lesson= link pre-selects it); any written text is.
+const hasText = (d) => !!d && FIELDS.some((f) => typeof d[f.key] === 'string' && d[f.key].trim() !== '');
+const workChanged = () => { try { document.dispatchEvent(new CustomEvent('mm:work-changed')); } catch { /* no DOM */ } };
+
+/** An unsaved journal entry with any written text. */
+export function pendingWork() {
+  return hasText(readDraft()) ? { kind: 'journal', label: 'your unsaved journal entry', resume: '#/journal' } : null;
+}
+
 export function render(el, params, ctx) {
   const page = h('section', { class: 'page' });
   el.append(page);
@@ -25,9 +43,30 @@ export function render(el, params, ctx) {
   const controls = {};
   const lessonSel = h('select', { id: 'jr-lesson' }, h('option', { value: '' }, 'Not about a lesson'),
     readyLessons().map((l) => h('option', { value: l.id }, pick(l.title, ctx.band))));
+  const draft = readDraft();
+  if (draft?.lesson && lessonById(draft.lesson)) lessonSel.value = draft.lesson;
   if (ctx.query?.lesson && lessonById(ctx.query.lesson)) lessonSel.value = ctx.query.lesson;
 
   const form = h('form', { class: 'card', novalidate: true }, h('h2', {}, 'New entry'));
+  const draftNote = h('p', { class: 'small muted', 'aria-live': 'polite' });
+  const clearBtn = btn('Clear draft', async () => {
+    const ok = await confirmDialog({ title: 'Clear this draft?', message: 'The words you have typed in this new entry will be erased.', confirmLabel: 'Clear draft', cancelLabel: 'Keep writing', danger: true });
+    if (!ok) return;
+    for (const f of FIELDS) controls[f.key].value = '';
+    lessonSel.value = '';
+    saveDraft();
+    controls.prediction.focus();
+  }, 'btn btn-ghost');
+  let wasPending = hasText(draft);
+  const saveDraft = () => {
+    const d = { lesson: lessonSel.value || null };
+    for (const f of FIELDS) d[f.key] = controls[f.key].value;
+    const pending = hasText(d);
+    writeDraft(pending || d.lesson ? d : null);
+    clearBtn.hidden = !pending;
+    draftNote.textContent = pending ? 'Draft kept on this device until you save it.' : '';
+    if (pending !== wasPending) { wasPending = pending; workChanged(); }
+  };
   for (const f of FIELDS) {
     const id = `jr-${f.key}`;
     const hintId = `${id}-hint`;
@@ -35,10 +74,15 @@ export function render(el, params, ctx) {
     form.append(h('div', { class: 'field' },
       h('label', { for: id }, f.label, f.required ? '' : h('span', { class: 'muted', style: 'font-weight:400' }, ' (optional)')),
       h('span', { class: 'field-hint', id: hintId }, f.hint), controls[f.key]));
+    if (typeof draft?.[f.key] === 'string') controls[f.key].value = draft[f.key].slice(0, 1000);
   }
   form.append(h('div', { class: 'field' }, h('label', { for: 'jr-lesson' }, 'Which lesson is this about? ', h('span', { class: 'muted', style: 'font-weight:400' }, '(optional)')), lessonSel),
-    formMsg, h('div', { class: 'btn-row' }, h('button', { type: 'submit', class: 'btn btn-primary' }, 'Save entry')));
+    formMsg, draftNote, h('div', { class: 'btn-row' }, h('button', { type: 'submit', class: 'btn btn-primary' }, 'Save entry'), clearBtn));
 
+  clearBtn.hidden = !wasPending;
+  if (wasPending) draftNote.textContent = 'Your unsaved draft was kept. Finish it and press Save entry.';
+  form.addEventListener('input', saveDraft);
+  form.addEventListener('change', saveDraft);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const entry = { id: uid('j') + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: Date.now(), lesson: lessonSel.value || null };
@@ -50,6 +94,9 @@ export function render(el, params, ctx) {
     }
     ctx.store.update((s) => { s.journal.push(entry); });
     for (const f of FIELDS) controls[f.key].value = '';
+    lessonSel.value = '';
+    saveDraft();
+    writeDraft(null);
     formMsg.replaceChildren(notice('Saved. Your entry is at the top of the list.', 'success'));
     paintList();
   });

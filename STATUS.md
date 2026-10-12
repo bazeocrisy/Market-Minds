@@ -4,7 +4,7 @@ Branch `feature/market-minds-v1` (not merged; `main` = live GitHub Pages, merge 
 
 ## Done
 - App-first shell: first-launch onboarding (#/welcome), saved dashboard on return, persistent app bar + More sheet, bottom tab bar on phones / top nav on tablet+desktop, screen transitions (reduced-motion safe), no website footer.
-- PWA: manifest (+ shortcuts), icons, network-first service worker with content-hash cache version, one consistent version per session (views preloaded), update notice + safe-point update on Home, offline notice, Install button / iOS instructions, persistent storage in the installed app.
+- PWA: manifest (+ shortcuts), icons, network-first service worker with content-hash cache version, one consistent version per session (views preloaded), update notice + safe update boundary (never interrupts practice, tests, lessons or unsaved drafts; Home never erases work; resume card), offline notice, Install button / iOS instructions, persistent storage in the installed app.
 - 11 lessons ready: World 1 (3), World 2 (4), World 4 (4); both grade bands; Read to Me; tap-a-word (64 dictionary terms); prerequisite warm-up.
 - Practice: 15 skills, 7–9 question templates each, hints, misconception feedback, retries, Show me how, Practice My Misses, Mixed Review, adaptive difficulty; independent vs assisted credit.
 - Thinking Lab 30 prompts (9 Mistake Detective); Market Lab Price Watch + Paper Practice with Line/Candles, Pattern Trap, Long or Short panel; Test with per-skill results and retake; My Progress; Stories (6); Decision Journal; Parent & Teacher; Achievement Certificates (earned only from mastery, no names stored).
@@ -15,4 +15,4 @@ Branch `feature/market-minds-v1` (not merged; `main` = live GitHub Pages, merge 
 - CME contract specs could not be fetched (403) — marked "to verify" in world-3/world-5 specs; not used in app content.
 
 ## Tests
-Chrome (each suite alone): unit 95/0 · smoke 673/0 · app-shell 267/0 · pwa 67/0 · pwa-lifecycle 25/0 · acceptance 471/0 · a11y 3149/0 · robustness 71/0. Edge: app-shell, pwa, pwa-lifecycle all green.
+Chrome (each suite alone): unit 97/0 · smoke 1681/0 · app-shell 267/0 · pwa 67/0 · pwa-lifecycle 43/0 · acceptance 467/0 · a11y 3149/0 · robustness 71/0. Edge: pwa-lifecycle 43/0, pwa 67/0, app-shell 267/0.

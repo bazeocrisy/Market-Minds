@@ -13,7 +13,7 @@ const ROUTES = ['#/', '#/learn', '#/learn/w1l1/1', '#/learn/w1l1/2', '#/learn/w1
   '#/test', '#/test/w1l1', '#/test/world-1', '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent', '#/learn/nope', '#/bogus',
   '#/welcome', '#/certificates', '#/learn/w2l2/1', '#/learn/w2l3/3', '#/learn/w2l4/5', '#/learn/w4l1/3', '#/learn/w4l2/3', '#/learn/w4l2/5', '#/learn/w4l3/4', '#/learn/w4l4/5', '#/test/world-2', '#/test/world-4', '#/test/w4l2', '#/market-lab?activity=paper&scenario=pretend-rice-pattern-trap'];
 try {
-  for (const [w, h] of [[375, 812], [1280, 800]]) {
+  for (const [w, h] of [[375, 812], [412, 915], [820, 1180], [1024, 768], [1280, 800]]) {
     await b.viewport(w, h);
     for (const band of ['explorer', 'analyst']) {
       await b.load(URL); await b.js(`localStorage.clear(); localStorage.setItem('mm.progress.v1', JSON.stringify({version:1,band:'${band}'}));`); await b.load(URL);

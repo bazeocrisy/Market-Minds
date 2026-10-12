@@ -45,3 +45,20 @@ test('service worker deletes old caches and is network-first', () => {
   assert.match(src, /clients\.claim/);
   assert.ok(src.indexOf('await fetch(req') < src.indexOf('cache.match(req'), 'network is tried before the cache');
 });
+
+test('nothing heavy is downloaded up front: no illustrations, and the app shell stays within budget', async () => {
+  const zlib = await import('node:zlib');
+  const files = appFiles();
+  for (const f of files) {
+    assert.ok(!/^assets\/(illustrations|visual-references)\//.test(f), `${f} must load only when shown, never precached`);
+    assert.ok(!/\.(jpe?g|webp|avif|gif|mp4|webm|pdf)$/i.test(f), `${f}: large media is never precached`);
+  }
+  const gz = files.reduce((n, f) => n + zlib.gzipSync(fs.readFileSync(path.join(ROOT, f))).length, 0);
+  assert.ok(gz < 400 * 1024, `precache is ${(gz / 1024).toFixed(0)} KB gzipped; budget 400 KB`);
+});
+
+test('lesson illustrations are lazy-loaded when they exist', () => {
+  const art = read('js/ui/art.js');
+  assert.match(art, /loading: 'lazy'/);
+  assert.match(art, /decoding: 'async'/);
+});

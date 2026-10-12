@@ -18,9 +18,24 @@ const DIFFICULTIES = [
 ];
 const MODE_LABEL = { practice: 'Practice', misses: 'Practice My Misses', mixed: 'Mixed Review' };
 
-// The live session survives navigation inside the app but not a page refresh (by design).
-let active = null;      // { session, opts, title }
+// The live session survives navigation inside the app (Home and back keeps it exactly where it was)
+// but not a page refresh (by design). It is discarded only by its own "End session" / finish, or by
+// explicitly starting a new session.
+let active = null;      // { session, opts, title, progress: { tally, count } }
 let lastSummary = null; // { title, tally, skills, opts }
+
+/** Tell the app shell that unsaved/in-progress work started or ended (update safety + dashboard resume). */
+export function workChanged() {
+  try { document.dispatchEvent(new CustomEvent('mm:work-changed')); } catch { /* no DOM */ }
+}
+
+/** In-progress work that would be lost by a reload: an active Practice session (see docs/ARCHITECTURE.md). */
+export function pendingWork() {
+  return active ? { kind: 'practice', label: 'your Practice session', resume: '#/practice/session' } : null;
+}
+
+/** Fresh per-session progress for mountSession (kept outside the DOM so a re-mount continues it). */
+export const newProgress = () => ({ tally: { answered: 0, own: 0, help: 0, shown: 0, skills: new Set() }, count: 0 });
 
 export function render(el, params, ctx) {
   const cleanups = [];
@@ -36,7 +51,8 @@ export function render(el, params, ctx) {
 export function startPractice(ctx, { skills, difficulty = 'adaptive', mode = 'practice', title }) {
   const opts = { band: ctx.band, skills, difficulty, mode, readySkills: readySkillIds() };
   const session = createPracticeSession(opts, ctx.store);
-  active = { session, opts, title: title || MODE_LABEL[mode] || 'Practice' };
+  active = { session, opts, title: title || MODE_LABEL[mode] || 'Practice', progress: newProgress() };
+  workChanged();
   ctx.go('#/practice/session');
 }
 
@@ -53,6 +69,13 @@ function renderChooser(page, ctx) {
   if (!ready.length) {
     page.append(notice('Practice opens as soon as the first lesson is ready. Lessons are still being written.', 'warn'));
     return;
+  }
+
+  if (active) {
+    page.append(notice(h('div', {},
+      h('p', {}, h('strong', {}, 'You have a practice session in progress: '), active.title,
+        active.progress.tally.answered ? ` (${plural(active.progress.tally.answered, 'question')} finished)` : '', '. Starting a new one will end it.'),
+      h('div', { class: 'btn-row', style: 'margin-top:8px' }, linkBtn('#/practice/session', 'Resume practice session')))));
   }
 
   // ----- quick options: misses + mixed review -----
@@ -173,9 +196,11 @@ function renderSession(page, ctx, cleanups) {
   page.append(host);
   const runner = mountSession(host, session, {
     band: ctx.band,
+    progress: active.progress,
     onDone: (tally) => {
       lastSummary = { title, tally, opts };
       active = null;
+      workChanged();
       ctx.go('#/practice/summary');
     }
   });
@@ -184,12 +209,12 @@ function renderSession(page, ctx, cleanups) {
 
 /**
  * Run practice questions from an engine session inside `host`.
- * opts: { band, limit?, onDone(tally), doneLabel?, intro? }. Returns { destroy }.
+ * opts: { band, limit?, onDone(tally), doneLabel?, progress? }. Returns { destroy }.
+ * progress = { tally, count } (from newProgress()); pass the same object to re-mount a session where it was.
  * tally = { answered, own, help, shown, skills:Set }
  */
-export function mountSession(host, session, { band, limit = Infinity, onDone, doneLabel = 'End session' } = {}) {
-  const tally = { answered: 0, own: 0, help: 0, shown: 0, skills: new Set() };
-  let count = 0;
+export function mountSession(host, session, { band, limit = Infinity, onDone, doneLabel = 'End session', progress = newProgress() } = {}) {
+  const tally = progress.tally;
   let destroyed = false;
 
   const tallyEl = h('p', { class: 'tally' });
@@ -206,36 +231,36 @@ export function mountSession(host, session, { band, limit = Infinity, onDone, do
     if (destroyed) return;
     const cur = session.current;
     if (!cur || !cur.question) {
-      body.replaceChildren(notice(count ? 'That’s every question in this set — nice work.' : 'There are no questions available for this choice yet.', count ? 'success' : 'warn'));
-      endBtn.textContent = count ? 'See summary' : 'Back';
+      body.replaceChildren(notice(progress.count ? 'That’s every question in this set — nice work.' : 'There are no questions available for this choice yet.', progress.count ? 'success' : 'warn'));
+      endBtn.textContent = progress.count ? 'See summary' : 'Back';
       endBtn.className = 'btn btn-primary';
       return;
     }
     const q = cur.question;
-    let misses = 0, hints = 0, finished = false;
+    // Re-mounting (e.g. after going Home): carry on with what the engine already knows about this question.
+    let misses = cur.wrong || 0, hints = cur.hintsUsed || 0, finished = false;
     tally.skills.add(q.skill);
     const next = h('div', { class: 'btn-row' });
-    const qnum = Number.isFinite(limit) ? `Question ${count + 1} of ${limit}` : `Question ${count + 1}`;
+    const qnum = Number.isFinite(limit) ? `Question ${progress.count + 1} of ${limit}` : `Question ${progress.count + 1}`;
     const head = h('div', { class: 'q-head' },
       h('span', { class: 'eyebrow', style: 'margin:0' }, qnum),
       h('span', { class: 'cluster' }, chip(skillName(q.skill), 'ready'), q.difficulty ? chip(cap(q.difficulty)) : null));
 
-    const finish = (kind) => {
+    const finish = (kind, { counted = false } = {}) => {
       finished = true;
-      tally.answered++;
-      tally[kind]++;
+      if (!counted) { tally.answered++; tally[kind]++; }
       paintTally();
-      const last = count + 1 >= limit;
+      const last = progress.count + 1 >= limit;
       const nb = btn(last ? 'Finish' : 'Next question →', () => {
-        count++;
-        if (count >= limit) { onDone?.(tally); return; }
+        progress.count++;
+        if (progress.count >= limit) { onDone?.(tally); return; }
         try { session.next(); } catch (e) { console.error(e); }
         showQuestion();
         body.querySelector('.q-prompt')?.setAttribute('tabindex', '-1');
         body.querySelector('.q-prompt')?.focus();
       }, 'btn btn-primary btn-lg');
       next.replaceChildren(nb);
-      nb.focus();
+      if (!counted) nb.focus();
     };
 
     const view = renderQuestion(q, {
@@ -273,6 +298,18 @@ export function mountSession(host, session, { band, limit = Infinity, onDone, do
       }
     });
     body.replaceChildren(head, view.el, next);
+    // Restore a question that was in progress when the learner left: hints already shown, or a finished
+    // question still waiting for "Next" (already counted in the tally).
+    const shownHints = Array.isArray(q.hints) ? q.hints.slice(0, hints) : [];
+    for (const t of shownHints) { try { view.showHint(t); } catch { /* ignore */ } }
+    if (cur.status === 'correct') {
+      view.showFeedback({ correct: true, feedback: '', explanation: q.explanation });
+      view.lock();
+      finish('own', { counted: true });
+    } else if (cur.status === 'revealed') {
+      view.reveal({ answer: q.answer, explanation: q.explanation });
+      finish('shown', { counted: true });
+    }
   };
   showQuestion();
   return { destroy() { destroyed = true; } };

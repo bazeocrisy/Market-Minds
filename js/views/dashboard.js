@@ -5,6 +5,22 @@ import { lessonById } from '../content/lessons.js';
 import { WORLDS } from '../content/worlds.js';
 import { masteryFor, missQueue } from '../engine/index.js';
 import { certificateCounts } from './certificates.js';
+// Namespace imports: each view exports pendingWork() → null | { kind, label, resume } (unsaved, in-memory work).
+import * as practiceView from './practice.js';
+import * as testView from './test.js';
+import * as journalView from './journal.js';
+import * as thinkingView from './thinking.js';
+import * as learnView from './learn.js';
+
+/** Every piece of unfinished work that only lives in this tab (never throws). */
+export function allPendingWork() {
+  const out = [];
+  for (const v of [practiceView, learnView, testView, thinkingView, journalView]) {
+    try { const w = typeof v.pendingWork === 'function' ? v.pendingWork() : null; if (w && w.resume) out.push(w); } catch (e) { console.error(e); }
+  }
+  return out;
+}
+
 
 const ICONS = {
   learn: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/>',
@@ -58,6 +74,15 @@ export function render(el, params, ctx) {
 
   const page = h('section', { class: 'page' });
   el.append(page);
+
+  // ---------- unfinished work (practice session, test, warm-up, Thinking Lab, journal draft) ----------
+  const pending = allPendingWork();
+  if (pending.length) {
+    page.append(h('section', { class: 'card resume-card', 'aria-labelledby': 'resume-title' },
+      h('h2', { id: 'resume-title', class: 'card-title' }, 'Pick up where you left off'),
+      h('ul', { class: 'resume-list' }, pending.map((w) => h('li', {},
+        h('a', { class: 'btn btn-gold', href: w.resume }, `Resume ${w.label} →`))))));
+  }
 
   // ---------- current learning panel ----------
   const name = BANDS[band]?.name || 'Market Explorer';

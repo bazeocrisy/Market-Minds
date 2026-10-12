@@ -11,7 +11,15 @@ import { SKILLS } from '../content/skills.js';
 import { createTest, checkResponse } from '../engine/index.js';
 
 // Survives in-app navigation only; a refresh mid-test starts over (nothing is recorded until submit).
+// Going Home and back keeps it exactly as it was; only Retake / starting another test replaces it.
 let running = null; // { scope, test, answers, index, results }
+
+const workChanged = () => { try { document.dispatchEvent(new CustomEvent('mm:work-changed')); } catch { /* no DOM */ } };
+
+/** A started, unsubmitted test (answers live only in memory until submit). */
+export function pendingWork() {
+  return running && !running.results ? { kind: 'test', label: 'your test', resume: `#/test/${encodeURIComponent(running.scope)}` } : null;
+}
 
 export function render(el, params, ctx) {
   const page = h('section', { class: 'page' });
@@ -41,6 +49,13 @@ function renderChooser(page, ctx) {
   }));
   const ready = readyLessons();
   if (!ready.length) { page.append(notice('Tests open when the first lesson is ready.', 'warn')); return; }
+  const pw = pendingWork();
+  if (pw) {
+    const info = scopeInfo(running.scope);
+    page.append(notice(h('div', {},
+      h('p', {}, h('strong', {}, 'You have a test in progress'), info ? `: ${scopeTitle(info, ctx.band)}` : '', ` (${running.answers.filter((a) => a != null).length} of ${running.answers.length} answered). Your answers are kept until you submit.`),
+      h('div', { class: 'btn-row', style: 'margin-top:8px' }, linkBtn(pw.resume, 'Resume test')))));
+  }
 
   const lastFor = (scope) => [...state.tests].reverse().find((t) => t.scope === scope);
   const testCard = (scope, title, sub) => {
@@ -81,9 +96,16 @@ const flag = { get() { try { return sessionStorage.getItem(ACTIVE_KEY); } catch 
 
 function renderIntro(page, info, ctx) {
   page.append(pageHead({ eyebrow: 'Test', title: scopeTitle(info, ctx.band) }));
-  if (flag.get()) {
+  // The flag outlives a reload but the in-memory test does not: flag set + nothing running = interrupted.
+  if (flag.get() && !pendingWork()) {
     page.append(notice('Your last test was interrupted (the page was refreshed or closed) before you submitted it, so it was not scored. You can start a fresh test.', 'info'));
     flag.set(null);
+  }
+  const pw = pendingWork();
+  if (pw) {
+    page.append(notice(h('div', {},
+      h('p', {}, 'You have another test in progress. Starting this one will end it without a score.'),
+      h('div', { class: 'btn-row', style: 'margin-top:8px' }, linkBtn(pw.resume, 'Resume the other test')))));
   }
   const skills = info.kind === 'lesson' ? info.lesson.skills || [] : lessonsInWorld(info.world).filter((l) => l.status === 'ready').flatMap((l) => l.skills || []);
   page.append(h('div', { class: 'card stack' },
@@ -102,6 +124,7 @@ function start(info, ctx) {
   try { test = createTest({ band: ctx.band, scope, length: info.length, readySkills: readySkillIds() }, ctx.store); } catch (e) { console.error(e); return; }
   running = { scope, test, answers: new Array(test.items.length).fill(null), index: 0, results: null };
   flag.set(scope);
+  workChanged();
   ctx.go(location.hash); // re-render this route (now showing item 1)
 }
 
@@ -138,6 +161,7 @@ function renderItem(page, info, ctx) {
     try { results = r.test.submit(); } catch (e) { console.error(e); results = {}; }
     r.results = results || {};
     flag.set(null);
+    workChanged();
     ctx.go(location.hash);
   }, `btn ${r.index === n - 1 ? 'btn-gold' : ''} btn-lg`);
   page.append(count, h('div', { class: 'lesson-step' }, view.el), nav, h('div', { class: 'btn-row' }, submit));

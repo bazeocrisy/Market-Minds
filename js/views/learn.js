@@ -11,11 +11,17 @@ import { LESSONS, lessonById } from '../content/lessons.js';
 import { termById } from '../content/glossary.js';
 import { SKILLS } from '../content/skills.js';
 import { checkResponse, createPracticeSession, masteryFor } from '../engine/index.js';
-import { mountSession } from './practice.js';
+import { mountSession, newProgress, workChanged } from './practice.js';
 
 const KINDS = ['discover', 'definition', 'visual', 'together', 'check', 'next'];
 const KIND_LABEL = { discover: 'Discover', definition: 'Key word', visual: 'See it', together: 'Try together', check: 'Check understanding', next: 'Next step' };
 const warmupHandled = new Set(); // lessons whose warm-up offer was taken or skipped this visit
+let warmup = null;               // a warm-up in progress: { lessonId, needs, session, progress } (kept across Home and back)
+
+/** In-progress work that a reload would lose. Lesson steps save as they go; only a running warm-up counts. */
+export function pendingWork() {
+  return warmup ? { kind: 'warmup', label: 'your lesson warm-up', resume: `#/learn/${warmup.lessonId}/1` } : null;
+}
 
 export function render(el, params, ctx) {
   const cleanups = [];
@@ -104,6 +110,8 @@ function renderLesson(page, params, ctx, cleanups) {
   page.classList.add('page-narrow');
 
   // ----- optional prerequisite warm-up before step 1 -----
+  if (warmup && warmup.lessonId === lesson.id && step !== 1) { warmup = null; workChanged(); }   // moved on past the warm-up
+  if (step === 1 && warmup && warmup.lessonId === lesson.id) { renderWarmupOffer(page, lesson, warmup.needs, ctx, cleanups, true); return; }
   if (step === 1 && !(saved?.maxStep > 1) && !warmupHandled.has(lesson.id)) {
     const needs = unmasteredPrereqs(lesson, ctx);
     if (needs.length) { renderWarmupOffer(page, lesson, needs, ctx, cleanups); return; }
@@ -297,7 +305,7 @@ function unmasteredPrereqs(lesson, ctx) {
   });
 }
 
-function renderWarmupOffer(page, lesson, needs, ctx, cleanups) {
+function renderWarmupOffer(page, lesson, needs, ctx, cleanups, resume = false) {
   const band = ctx.band;
   const world = worldOf(lesson);
   page.append(h('header', { class: 'lesson-top' },
@@ -306,16 +314,22 @@ function renderWarmupOffer(page, lesson, needs, ctx, cleanups) {
   const box = h('div', { class: 'lesson-step' });
   page.append(box);
   const skip = () => { warmupHandled.add(lesson.id); ctx.go(`#/learn/${lesson.id}/1`); };
+  const endWarmup = () => { if (warmup) { warmup = null; workChanged(); } };
   const start = () => {
     warmupHandled.add(lesson.id);
-    let session;
-    try { session = createPracticeSession({ band, skills: needs, difficulty: 'easy', mode: 'warmup' }, ctx.store); } catch (e) { console.error(e); skip(); return; }
+    if (!warmup || warmup.lessonId !== lesson.id) {
+      let session;
+      try { session = createPracticeSession({ band, skills: needs, difficulty: 'easy', mode: 'warmup' }, ctx.store); } catch (e) { console.error(e); skip(); return; }
+      warmup = { lessonId: lesson.id, needs, session, progress: newProgress() };
+      workChanged();
+    }
+    const { session, progress } = warmup;
     box.replaceChildren(h('h2', {}, 'Warm-up: 3 quick questions'), h('p', { class: 'muted' }, 'Hints are welcome. Misses go to Practice My Misses so you can review them later.'));
     const host = h('div');
     box.append(host);
     const runner = mountSession(host, session, {
-      band, limit: 3, doneLabel: 'Skip the rest',
-      onDone: () => ctx.go(`#/learn/${lesson.id}/1`)
+      band, limit: 3, doneLabel: 'Skip the rest', progress,
+      onDone: () => { endWarmup(); ctx.go(`#/learn/${lesson.id}/1`); }
     });
     cleanups.push(runner.destroy);
     host.querySelector('.q-prompt')?.setAttribute('tabindex', '-1');
@@ -325,4 +339,5 @@ function renderWarmupOffer(page, lesson, needs, ctx, cleanups) {
     h('h2', {}, 'Want a quick warm-up first?'),
     h('p', {}, `This lesson builds on ${needs.map(skillName).join(' and ')}. A ${plural(3, 'question')} warm-up can help — it’s optional.`),
     h('div', { class: 'btn-row' }, btn('Start warm-up', start, 'btn btn-primary btn-lg'), btn('Skip warm-up', skip, 'btn btn-lg')));
+  if (resume) start();
 }

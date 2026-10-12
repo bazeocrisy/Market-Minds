@@ -280,3 +280,22 @@ New suite `tests/browser/pwa-lifecycle.mjs` (own static server that can "publish
 **Headless Microsoft Edge:** app-shell 267/0 · pwa 67/0 · pwa-lifecycle 25/0.
 
 Still manual-only: the native install dialog itself, iOS Safari (WebKit is not available on this PC), real devices, screen readers, real speech voices.
+
+
+---
+
+## Round 4 — safe update boundary (Lead, 2026-10-12)
+
+Defect found by review: the round-3 rule "apply the update when the learner goes Home" would reload the page even if a Practice session, an unsubmitted test, or a half-written journal / Thinking Lab entry existed (those live in memory), erasing them; and journal/Thinking Lab drafts were lost on any navigation.
+
+Fix: `pendingWork()` contract (practice, test, journal, thinking, learn warm-up) + `mm:work-changed`; `app.js` applies an update only at Home with nothing pending (or Refresh now, offered only when nothing is pending); drafts persisted in sessionStorage; dashboard "Pick up where you left off" resume card. Owners: Agent 3 (practice/test/journal/learn/dashboard), Agent 4 (thinking), Lead (app.js, tests).
+
+`pwa-lifecycle.mjs` now also proves (real headless Chrome, own server that publishes a new version mid-session): journal draft survives a refresh; with practice + journal + thinking work open, the update notice appears WITHOUT a Refresh button and names the work; practice stays on the same question; an open lesson and a newly started test are not interrupted; going Home does NOT reload, and offers Resume links for practice, test, journal and thinking; resuming finds the same practice question, the test still running and both drafts intact; after finishing everything the notice offers Refresh now; then Home reloads into the new version with progress, grade, the saved journal entry and the test result intact; old caches deleted; offline afterwards opens the new version.
+
+Asset budget unit tests: no illustrations/reference images/media in the precache; precache < 400 KB gzipped (currently ≈288 KB); lesson art uses `loading="lazy"`.
+
+Responsive: smoke now covers 375, 412, 820, 1024 and 1280 widths (every route, both bands); a11y covers 375/768/1440.
+
+**Results (each suite alone):** Chrome — unit 97/0 · smoke 1681/0 · app-shell 267/0 · pwa 67/0 · pwa-lifecycle 43/0 · acceptance 467/0 (461–471 depending on how fast the random 6–8 practice serves a percent question; verified by diffing check names against the previous commit — only that loop's count differs) · a11y 3149/0 · robustness 71/0. Edge — pwa-lifecycle 43/0 · pwa 67/0 · app-shell 267/0.
+
+Known minor (open): the dashboard's "Pick up where you left off" card (h2) is placed above the page h1 (heading order).

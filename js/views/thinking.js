@@ -13,8 +13,66 @@ import { readToMe, stopAll } from '../ui/speech.js';
 // World headings come from js/content/worlds.js, so new worlds appear without editing this view.
 const worldName = (num) => { const w = worldById(num); return w ? `World ${num}: ${w.title}` : `World ${num}`; };
 const MAX_RESPONSE = 2000;
-// Unsaved drafts survive a re-render (e.g. switching grade band) for this page visit only. Memory only.
-const drafts = new Map();
+// Unsaved drafts survive a re-render (grade switch), a refresh, an app update and Home-and-back.
+// Kept in sessionStorage (this tab only, cleared when the tab closes) under DRAFT_KEY as
+// { [promptId]: { choice, response, selfCheck, compared, at } }. Storage may be blocked: then memory only.
+const DRAFT_KEY = 'mm.draft.thinking';
+const drafts = loadDrafts();
+
+function loadDrafts() {
+  const m = new Map();
+  try {
+    const raw = globalThis.sessionStorage?.getItem(DRAFT_KEY);
+    const obj = raw ? JSON.parse(raw) : null;
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      for (const [id, d] of Object.entries(obj)) {
+        if (!d || typeof d !== 'object' || !promptById(id)) continue;
+        m.set(id, {
+          choice: typeof d.choice === 'string' ? d.choice : null,
+          response: typeof d.response === 'string' ? d.response.slice(0, MAX_RESPONSE) : '',
+          selfCheck: Array.isArray(d.selfCheck) ? d.selfCheck.map(Boolean) : [],
+          compared: !!d.compared,
+          at: Number.isFinite(d.at) ? d.at : 0
+        });
+      }
+    }
+  } catch { /* blocked or corrupt storage: start empty */ }
+  return m;
+}
+function persistDrafts() {
+  try {
+    const ss = globalThis.sessionStorage;
+    if (!ss) return;
+    if (drafts.size) ss.setItem(DRAFT_KEY, JSON.stringify(Object.fromEntries(drafts)));
+    else ss.removeItem(DRAFT_KEY);
+  } catch { /* blocked or full storage: the in-memory draft still works */ }
+}
+const hasWork = (d) => !!d && (!!d.choice || !!String(d.response || '').trim());
+function workChanged() {
+  try { document.dispatchEvent(new CustomEvent('mm:work-changed')); } catch { /* no DOM (tests) */ }
+}
+function setDraft(id, d) {
+  const before = hasWork(drafts.get(id));
+  drafts.set(id, { ...d, at: Date.now() });
+  persistDrafts();
+  if (before !== hasWork(d)) workChanged();
+}
+function clearDraft(id, { saved = false } = {}) {
+  const had = drafts.has(id);
+  drafts.delete(id);
+  persistDrafts();
+  if (had || saved) workChanged();
+}
+
+/**
+ * Unsaved Thinking Lab work, for the app's "don't lose your work" checks (updates, Home).
+ * @returns {null | { kind: 'thinking', label: string, resume: string }} the most recent unsaved draft with a choice or written words.
+ */
+export function pendingWork() {
+  let best = null, bestId = null;
+  for (const [id, d] of drafts) if (hasWork(d) && (!best || d.at >= best.at)) { best = d; bestId = id; }
+  return best ? { kind: 'thinking', label: 'your Thinking Lab answer', resume: `#/thinking/${encodeURIComponent(bestId)}` } : null;
+}
 
 // ---------- tiny local DOM helpers ----------
 function h(tag, attrs = {}, ...kids) {
@@ -102,7 +160,7 @@ function renderPrompt(el, p, ctx) {
     compared: draft.compared ?? !!saved
   };
   while (state.selfCheck.length < checklist.length) state.selfCheck.push(false);
-  const keepDraft = () => drafts.set(p.id, { choice: state.choice, response: state.response, selfCheck: state.selfCheck, compared: state.compared });
+  const keepDraft = () => setDraft(p.id, { choice: state.choice, response: state.response, selfCheck: state.selfCheck.slice(), compared: state.compared });
 
   const idx = THINKING_PROMPTS.indexOf(p);
   const prev = THINKING_PROMPTS[idx - 1], next = THINKING_PROMPTS[idx + 1];
@@ -199,7 +257,7 @@ function renderPrompt(el, p, ctx) {
     if (!state.choice) { saveStatus.textContent = 'Pick a choice above first, then save.'; choiceBtns[0]?.focus(); return; }
     const record = { choice: state.choice, response: state.response.trim().slice(0, MAX_RESPONSE), selfCheck: state.selfCheck.map(Boolean), completedAt: Date.now() };
     ctx.store.update((s) => { s.thinking[p.id] = record; });
-    drafts.delete(p.id);
+    clearDraft(p.id, { saved: true });
     saveStatus.textContent = `Saved on this device. ${state.response.trim() ? 'Nice work explaining your thinking.' : 'Next time, try writing an explanation too.'}`;
   }
 

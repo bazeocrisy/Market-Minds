@@ -59,6 +59,26 @@ try {
   await b.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   check('back online: notice hidden', await until(`document.getElementById('appStatus').hidden`, 3000));
 
+  // ---------------- unfinished work BEFORE a new version is published ----------------
+  const typeInto = (sel, text) => b.js(`const el = document.querySelector(${JSON.stringify(sel)}); el.value = ${JSON.stringify(text)}; el.dispatchEvent(new Event('input', { bubbles: true }));`);
+  const prompt = () => q(`(document.querySelector('#view .q-prompt') || {}).textContent || ''`);
+  const clickText = (sel, text) => b.js(`[...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => e.textContent.trim().startsWith(${JSON.stringify(text)})).click();`);
+  // journal draft
+  await b.js(`location.hash = '#/journal';`); await b.wait(400);
+  await typeInto('#jr-prediction', 'I think lemonade will cost more on the hot day.');
+  await b.reload(); await b.js("location.hash = '#/journal';"); await b.wait(400);
+  check('journal draft survives a page refresh', (await q("document.getElementById('jr-prediction').value")) === 'I think lemonade will cost more on the hot day.');
+  // thinking lab draft
+  await b.js(`location.hash = '#/thinking/tl-w1-saturday-swap';`); await b.wait(400);
+  await typeInto('#view textarea', 'Because more people want lemonade when it is hot.');
+  // practice session
+  await b.js(`location.hash = '#/practice';`); await b.wait(400);
+  await clickText('#view button', 'Start practice'); await b.wait(500);
+  const practicePrompt = await prompt();
+  check('practice session started', (await q('location.hash')) === '#/practice/session' && practicePrompt.length > 0, practicePrompt);
+  const kinds = async () => (await b.js('return window.__mm.pendingWork();')).map((w) => w.kind).sort().join(',');
+  check('unfinished work is reported (journal, practice, thinking)', (await kinds()) === 'journal,practice,thinking', await kinds());
+
   // ---------------- publish a new version mid-session ----------------
   const oldCaches = await b.js(`return caches.keys();`);
   const sw = read('sw.js').replace(/const CACHE_VERSION = '[^']*';/, "const CACHE_VERSION = 'testnewversion';");
@@ -66,26 +86,65 @@ try {
   // the new version changes a screen the learner has NOT opened yet this session
   overrides.set('js/views/dictionary.js', read('js/views/dictionary.js').replace("title: 'Market words'", "title: 'Market words v2'"));
   await b.js(`(await navigator.serviceWorker.getRegistration()).update();`);
-  check('update detected: notice offers Refresh now', await until(`window.__mm.pwa.updateReady && document.getElementById('appStatus').dataset.kind === 'update' && !!document.querySelector('#appStatus [data-action="apply-update"]')`, 15000),
-    await q(`document.getElementById('appStatus').outerHTML`));
+  check('update detected while work is unfinished: notice shown WITHOUT a Refresh button', await until(`window.__mm.pwa.updateReady && document.getElementById('appStatus').dataset.kind === 'update' && /after you finish/.test(document.getElementById('appStatus').textContent)`, 15000)
+    && !(await q(`!!document.querySelector('#appStatus [data-action="apply-update"]')`)), await q(`document.getElementById('appStatus').outerHTML`));
+  check('notice names the unfinished work', /Practice session/.test(await q(`document.getElementById('appStatus').textContent`)));
+  await b.js('window.__sameSession = 1;');   // disappears if the page reloads
+  // the active practice session is not interrupted
+  check('practice session still on screen, same question', (await prompt()) === practicePrompt && (await q('window.__sameSession')) === 1);
+  // an open lesson is not interrupted
+  await b.js(`location.hash = '#/learn/w1l1/4';`); await b.wait(500);
+  check('lesson opens normally with an update pending (no reload)', (await h1()) === 'What Is a Market?' && (await q('window.__sameSession')) === 1);
+  // a test started while the update is pending
+  await b.js(`location.hash = '#/test/w1l1';`); await b.wait(400);
+  await clickText('#view button', 'Start test'); await b.wait(500);
+  const testH1 = await h1();
+  check('test started', /^Question 1 of/.test(testH1), testH1);
+  // going Home with unfinished work: NO reload, nothing erased, resume links offered
+  await b.js(`location.hash = '#/';`); await b.wait(700);
+  check('Home with unfinished work: no reload (update waits)', (await q('window.__sameSession')) === 1 && (await q('window.__mm.pwa.updateReady')) === true);
+  const resume = await q(`[...document.querySelectorAll('#view .resume-card a')].map((a) => a.getAttribute('href')).sort().join(' ')`);
+  check('dashboard offers Resume links for every unfinished item', ['#/journal', '#/practice/session', '#/test/w1l1', '#/thinking/tl-w1-saturday-swap'].every((x) => resume.includes(x)), resume);
+  await b.js(`location.hash = '#/practice/session';`); await b.wait(500);
+  check('resumed practice: same question, nothing lost', (await prompt()) === practicePrompt, await prompt());
+  await b.js(`location.hash = '#/test/w1l1';`); await b.wait(500);
+  check('resumed test: still in progress', /^Question \d+ of/.test(await h1()), await h1());
+  await b.js(`location.hash = '#/journal';`); await b.wait(400);
+  check('journal draft kept', (await q(`document.getElementById('jr-prediction').value`)) === 'I think lemonade will cost more on the hot day.');
+  await b.js(`location.hash = '#/thinking/tl-w1-saturday-swap';`); await b.wait(400);
+  check('thinking draft kept', (await q(`document.querySelector('#view textarea').value`)) === 'Because more people want lemonade when it is hot.');
+  // finish everything: save journal, clear thinking draft, submit test, end practice
+  await b.js(`location.hash = '#/journal';`); await b.wait(400);
+  await b.js(`document.querySelector('#view form').requestSubmit();`); await b.wait(400);
+  await b.js(`location.hash = '#/thinking/tl-w1-saturday-swap';`); await b.wait(400);
+  await typeInto('#view textarea', '');
+  await b.js(`location.hash = '#/test/w1l1';`); await b.wait(400);
+  await clickText('#view button', 'Submit test'); await b.wait(300);
+  await clickText('button', 'Submit anyway'); await b.wait(500);
+  await b.js(`location.hash = '#/practice/session';`); await b.wait(400);
+  await clickText('#view button', 'End session'); await b.wait(500);
+  check('all work finished → nothing pending', (await kinds()) === '', await kinds());
+  check('still the same session until a safe moment', (await q('window.__sameSession')) === 1);
+  check('nothing pending → notice now offers Refresh now', await until(`!!document.querySelector('#appStatus [data-action="apply-update"]')`, 3000), await q(`document.getElementById('appStatus').outerHTML`));
+  const journalSaved = await q('window.__mm.store.get().journal.length');
+  const testsSaved = await q('window.__mm.store.get().tests.length');
+  check('journal entry and test result were saved before the update', journalSaved >= 1 && testsSaved >= 1, `${journalSaved} ${testsSaved}`);
   check('new cache created, old caches deleted', await until(`(async () => { const k = await caches.keys(); return k.includes('mm-testnewversion') && !k.some((x) => x.startsWith('mm-') && x !== 'mm-testnewversion'); })()`, 8000),
     JSON.stringify({ oldCaches, now: await b.js('return caches.keys();') }));
   // no mixed versions: the running session keeps the screens it preloaded
   await b.js(`location.hash = '#/dictionary';`); await b.wait(500);
   check('no mixed versions: running session still shows the version it started with', (await h1()) === 'Market words', await h1());
-  // a practice session is not interrupted by the update
-  await b.js(`location.hash = '#/practice';`); await b.wait(400);
-  check('practice still opens normally before going Home', (await h1()) !== '' && (await q('location.hash')) === '#/practice', await h1());
-  // safe point: going Home loads the new version
-  const loadsBefore = await q('performance.getEntriesByType("navigation").length');
+  // safe point: nothing unfinished + going Home loads the new version
+  const progressBeforeUpdate = await q(`JSON.stringify(window.__mm.store.get().lessons)`);
   await b.navigate(`location.hash = '#/';`);
+  check('safe moment: going Home reloaded the page', (await q('window.__sameSession')) == null);
   check('going Home reloads into the new version (notice gone)', await until(`!window.__mm.pwa.updateReady && document.getElementById('appStatus').hidden`, 8000));
   await b.js(`location.hash = '#/dictionary';`); await b.wait(500);
   check('after reload: new version is in use', (await h1()) === 'Market words v2', await h1());
   const after = await q(`JSON.stringify(window.__mm.store.get().lessons)`);
-  check('progress kept across the update', after === before, `${before} vs ${after}`);
+  check('progress kept across the update', after === progressBeforeUpdate && JSON.parse(after).w1l1?.step === 4, `${progressBeforeUpdate} vs ${after}`);
   check('grade kept across the update', (await q('window.__mm.store.get().band')) === 'analyst');
-  void loadsBefore;
+  check('saved journal entry and test result survive the update', (await q('window.__mm.store.get().journal.length')) >= 1 && (await q('window.__mm.store.get().tests.length')) >= 1);
 
   // ---------------- offline after the update: the NEW version is what's cached ----------------
   down = true;
