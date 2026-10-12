@@ -248,6 +248,27 @@ body { min-height: 100vh; min-height: 100dvh; }
   .app-tabs a[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--teal); }
 }
 
+/* App status strip (offline / update available), under the app bar. In normal flow, so it never covers content or the tab bar. */
+.app-status {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s2) var(--s3);
+  min-height: 44px; padding: var(--s2) max(var(--s4), env(safe-area-inset-right)) var(--s2) max(var(--s4), env(safe-area-inset-left));
+  font-size: var(--fs-sm); font-weight: 650; line-height: 1.4; text-align: center;
+  background: var(--navy); color: var(--cream); border-bottom: 1px solid var(--navy-2);
+}
+.app-status[hidden] { display: none !important; }
+.app-status[data-kind="update"] { background: var(--teal-soft); color: var(--navy); border-bottom: 3px solid var(--teal); }
+.app-status .btn { min-height: 44px; }
+.app-status[data-kind="offline"] .btn { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+[data-route="welcome"] .app-status { padding-top: max(var(--s2), env(safe-area-inset-top)); }
+
+/* More sheet: "Get the app" block (hidden as a whole until app.js shows one of its children). */
+.more-install { margin-top: var(--s2); padding: var(--s3); border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.more-install[hidden] { display: none !important; }
+.more-install h2 { font-size: 1rem; margin-bottom: var(--s2); }
+.more-install .btn { width: 100%; }
+.more-install p { margin: 0; color: var(--ink-2); }
+.more-install .btn:not([hidden]) + p:not([hidden]) { margin-top: var(--s2); }
+
 /* First launch (#/welcome): no app chrome; the onboarding screen fills the viewport. */
 [data-route="welcome"] .app-bar { display: none; }
 [data-route="welcome"] body { padding-bottom: 0; }
@@ -873,7 +894,7 @@ dialog.modal[open]:not(:modal) { position: fixed; inset: 0; margin: auto; z-inde
 /* ---------- print (Parent & Teacher view, certificates, any page) ---------- */
 @media print {
   body { background: #fff; font-size: 12pt; }
-  .app-bar, .app-tabs, .more-sheet, .skip, .no-print, .read-to-me, .btn, .btn-row { display: none !important; }
+  .app-bar, .app-tabs, .more-sheet, .app-status, .skip, .no-print, .read-to-me, .btn, .btn-row { display: none !important; }
   body { padding: 0 !important; min-height: 0 !important; display: block; }
   .view-enter { animation: none !important; }
   .print-only { display: block; }

@@ -52,6 +52,12 @@
             <li><a href="#/parent" data-nav="parent">Parent &amp; Teacher</a></li>
           </ul>
         </nav>
+        <section id="installBlock" class="more-install" hidden aria-labelledby="installTitle">
+          <h2 id="installTitle">Get the app</h2>
+          <button type="button" id="installApp" class="btn btn-primary" hidden>Install Market Minds</button>
+          <p id="installHelpIos" class="small" hidden>On iPhone or iPad: tap the Share button, then “Add to Home Screen.”</p>
+          <p id="installDone" class="small" hidden>Market Minds is installed on this device.</p>
+        </section>
         <section class="about-safety" aria-labelledby="aboutTitle">
           <h2 id="aboutTitle">About &amp; safety</h2>
           <p>Market Minds is for learning only. Every price is pretend; nothing here is real trading or advice.</p>
@@ -74,6 +80,9 @@
       </ul>
     </nav>
   </header>
+
+  <!-- Offline / update notices. app.js un-hides it and sets data-kind="offline"|"update". -->
+  <div id="appStatus" class="app-status" role="status" aria-live="polite" hidden></div>
 
   <main id="view" tabindex="-1">
     <noscript>

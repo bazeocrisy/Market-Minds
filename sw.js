@@ -2,7 +2,7 @@
 // - CACHE_VERSION is a content hash written by scripts/update-sw.mjs; a new version deletes every older cache.
 // - Network-first for all same-origin GETs: online learners always get the newest files; the cache is only a fallback.
 // - Progress lives in localStorage and is never touched here.
-const CACHE_VERSION = '24248cfcda6c';
+const CACHE_VERSION = '0b1b4dc1f7ba';
 const CACHE = `mm-${CACHE_VERSION}`;
 const PRECACHE = [
   './',

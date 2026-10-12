@@ -255,3 +255,28 @@ Test corrections (Lead): app-shell "Back after onboarding" now starts from a gen
 Final run, one suite at a time (the combined `run-all` was stopped once by the low-memory reaper, so suites were run individually): unit 95/0 · smoke 673/0 · app-shell 267/0 · pwa 67/0 · acceptance 461/0 · a11y 3149/0 · robustness 71/0.
 
 Known minor (open): on a candle whose low sits at the chart's bottom gridline, the ▼ marker can overlap the day label (seen in w4l2 step 3, "Wed").
+
+
+---
+
+## Round 3 — PWA completion (Lead, 2026-10-12)
+
+Gaps found by reviewing the PWA after round 2, and fixed:
+
+| Gap | Fix |
+|---|---|
+| **Mixed versions after an update (real defect):** views are lazy-loaded with network-first, so a version published mid-session could pair new view modules with the old `app.js` | `app.js` preloads all view modules after the first render → one consistent version per session |
+| No update notice; update checks only on page load | status strip "A new version … is ready" + **Refresh now**; auto-applies at the next Home navigation; checks on foreground + every 30 min |
+| No offline indicator | status strip: offline, "progress still saves" |
+| No install affordance | More → Get the app: Install button (deferred `beforeinstallprompt`), iOS instructions, installed note; manifest shortcuts |
+| Progress could be evicted on a full device | installed app requests persistent storage |
+| Dashboard "What Is a Market?." double punctuation | fixed |
+
+Found only by running in a browser: the first version of the change threw `ReferenceError: Cannot access 'pwa' before initialization` on every load (the first `route()` ran before the declaration). Unit tests could not see it; `pwa-lifecycle.mjs` caught it; fixed.
+
+New suite `tests/browser/pwa-lifecycle.mjs` (own static server that can "publish" a new version): first launch → onboarding → grade persists across reload; offline notice on/off; publish new `sw.js` + changed view mid-session → update notice, new cache created and old `mm-` caches deleted, running session still shows its original version (no mixing), practice not interrupted, Home reloads into the new version, progress + grade kept; real connection drop afterwards → the NEW version opens from cache, saved lesson step opens; Chrome fires a real `beforeinstallprompt` (installable) → Install button → `prompt()` called → installed note; iPhone UA (with Chrome's prompt suppressed, as Safari never fires one) → Add to Home Screen instructions.
+
+**Results (each suite run on its own, headless Chrome):** unit 95/0 · smoke 673/0 · app-shell 267/0 · pwa 67/0 · pwa-lifecycle 25/0 · acceptance 471/0 · a11y 3149/0 · robustness 71/0.
+**Headless Microsoft Edge:** app-shell 267/0 · pwa 67/0 · pwa-lifecycle 25/0.
+
+Still manual-only: the native install dialog itself, iOS Safari (WebKit is not available on this PC), real devices, screen readers, real speech voices.

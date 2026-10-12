@@ -37,7 +37,12 @@ Decision: keep the static GitHub Pages architecture — plain HTML/CSS and nativ
 - **Network-first** for every same-origin GET: online students always get the newest files, and the cache is refreshed as they go. Only when the network fails is the cached copy served; navigations fall back to the cached `index.html`.
 - `activate` deletes every cache that is not the current version and calls `clients.claim()`; new workers `skipWaiting()`. Obsolete versions are therefore never kept or served when online.
 - Never caches cross-origin requests or non-GET requests. localStorage progress is untouched by the worker.
-- Registered from `app.js` only over http(s) (not `file://`), scope `./` so it works under `/Market-Minds/`.
+- Registered from `app.js` only over http(s) (not `file://`), scope `./` so it works under `/Market-Minds/`. `app.js` re-checks for a new version when the app returns to the foreground and every 30 minutes.
+- **One consistent version per session:** after the first screen renders, `app.js` preloads every view module (ES modules are cached per page), so a version published mid-session can never be mixed with the running one.
+- **Update notice:** when a replaced worker takes control (`controllerchange` after a previous controller), the status strip `#appStatus` says a new version is ready with **Refresh now**; otherwise the new version loads at the next safe point — the next time the learner goes Home (every lesson step is already saved; practice/test sessions are never interrupted).
+- **Offline notice:** `#appStatus` (data-kind `offline`) tells the learner opened lessons still work and progress still saves.
+- **Install:** Chromium's `beforeinstallprompt` is deferred behind an **Install Market Minds** button in More → Get the app; iPhone/iPad get Add to Home Screen instructions; installed apps show an "installed" note. Manifest shortcuts: Learn, Practice, My Progress.
+- **Keeping progress:** in the installed app, `navigator.storage.persist()` is requested so the browser keeps this device's progress (not requested in a normal tab, to avoid permission prompts).
 
 ## Runtime architecture
 
@@ -167,7 +172,7 @@ Agents edit only files they own. Anything else → report to the Lead, who makes
 
 | Owner | Files |
 |---|---|
-| Lead (Claude) | `sw.js`, `manifest.webmanifest`, `assets/icons/**`, `tests/unit/pwa.test.mjs`, `docs/ARCHITECTURE.md`, `STATUS.md`, `README.md`, `package.json`, `.nojekyll`, `js/app.js`, `js/store.js`, `js/content/band.js`, `js/content/skills.js` (ids), `tests/unit/store.test.mjs` |
+| Lead (Claude) | `sw.js`, `manifest.webmanifest`, `assets/icons/**`, `tests/unit/pwa.test.mjs`, `tests/browser/pwa-lifecycle.mjs`, `tests/browser/smoke.mjs`, `docs/ARCHITECTURE.md`, `STATUS.md`, `README.md`, `package.json`, `.nojekyll`, `js/app.js`, `js/store.js`, `js/content/band.js`, `js/content/skills.js` (ids), `tests/unit/store.test.mjs` |
 | Agent 1 Curriculum Architect | `js/content/lessons.js`, `js/content/worlds.js`, `js/content/glossary.js`, `js/content/stories.js`, `docs/curriculum/**`, `docs/ASSET-MANIFEST.md`, `tests/unit/content.test.mjs`; may edit names/descriptions in `skills.js` |
 | Agent 2 Learning Engine | `js/engine/**`, `tests/unit/engine*.test.mjs` |
 | Agent 3 UI/UX | `js/views/welcome.js`, `js/views/certificates.js`, `index.html`, `styles.css`, `assets/placeholders/**`, `js/ui/dom.js`, `js/ui/question.js`, `js/ui/speech.js`, `js/ui/vocab.js`, `js/views/{dashboard,learn,practice,test,progress,dictionary,stories,journal,parent}.js` |

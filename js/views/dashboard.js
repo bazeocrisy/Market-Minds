@@ -78,7 +78,7 @@ export function render(el, params, ctx) {
     const label = !hasProgress ? 'Start Learning' : allDone ? 'Review a lesson' : 'Continue Learning';
     copy.append(
       h('p', {}, allDone ? 'You have finished every ready lesson. Review one, or keep practicing toward mastery.'
-        : `${hasProgress ? 'Up next' : 'Your first lesson'}: ${pick(cur.title, band)}.`),
+        : `${hasProgress ? 'Up next' : 'Your first lesson'}: ${pick(cur.title, band).replace(/([^.?!])$/, '$1.')}`),
       h('div', { class: 'btn-row' },
         h('a', { class: 'btn btn-primary btn-lg', href }, `${label} →`),
         h('a', { class: 'btn', href: '#/learn' }, 'All lessons')));

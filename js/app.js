@@ -15,6 +15,8 @@ const TITLES = {
 const viewEl = document.getElementById('view');
 let cleanup = null;
 let renderId = 0;
+// PWA state (declared before the first route() call, which reads it).
+const pwa = { updateReady: false, online: navigator.onLine !== false, preloaded: false, installable: false, installed: false, persisted: null };
 const AFTER_WELCOME = 'mm.afterWelcome';   // where a first-time learner was heading (sessionStorage)
 const session = {
   get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
@@ -47,6 +49,7 @@ async function route(opts = {}) {
     location.replace('#/welcome');
     return;
   }
+  if (pwa.updateReady && name === 'dashboard' && !opts.initial) { location.reload(); return; }
   document.documentElement.dataset.route = name;
   let mod;
   try { mod = await import(`./views/${name}.js`); } catch (e) {
@@ -124,14 +127,98 @@ window.addEventListener('storage', (e) => {
 });
 syncBand();
 window.addEventListener('hashchange', () => route());
-route();
+route({ initial: true }).then(preloadViews);
 
 viewEl.addEventListener('animationend', () => viewEl.classList.remove('view-enter'));
 
-// Installable + offline: network-first service worker (see sw.js). Only over http(s), never file://.
-if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('Offline support unavailable:', e)); });
+// ---------- PWA: one consistent version per session, update notice, offline notice, install, storage ----------
+const VIEW_NAMES = [...new Set(Object.values(ROUTES))];
+
+/**
+ * Load every screen module once the first screen is up. ES modules are cached per page, so the whole session then
+ * runs one consistent version even if a newer version is published (or fetched by the service worker) mid-session.
+ */
+function preloadViews() {
+  const run = () => Promise.allSettled(VIEW_NAMES.map((n) => import(`./views/${n}.js`))).then(() => { pwa.preloaded = true; });
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 }); else setTimeout(run, 300);
 }
 
+const statusEl = document.getElementById('appStatus');
+function paintStatus() {
+  if (!statusEl) return;
+  statusEl.replaceChildren();
+  let kind = null;
+  if (pwa.updateReady) {
+    kind = 'update';
+    const msg = document.createElement('span');
+    msg.textContent = 'A new version of Market Minds is ready. It will load next time you go Home.';
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'btn btn-sm'; btn.dataset.action = 'apply-update'; btn.textContent = 'Refresh now';
+    statusEl.append(msg, ' ', btn);
+  } else if (!pwa.online) {
+    kind = 'offline';
+    const msg = document.createElement('span');
+    msg.textContent = 'You’re offline — lessons you’ve opened still work and your progress still saves.';
+    statusEl.append(msg);
+  }
+  statusEl.hidden = !kind;
+  if (kind) statusEl.dataset.kind = kind; else delete statusEl.dataset.kind;
+}
+document.addEventListener('click', (e) => { if (e.target.closest('[data-action="apply-update"]')) location.reload(); });
+window.addEventListener('online', () => { pwa.online = true; paintStatus(); });
+window.addEventListener('offline', () => { pwa.online = false; paintStatus(); });
+
+// Install: Chromium's install prompt behind our own button; iPhone/iPad get Add to Home Screen instructions.
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let deferredInstall = null;
+function paintInstall() {
+  const block = document.getElementById('installBlock');
+  if (!block) return;
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.hidden = !on; };
+  pwa.installed = pwa.installed || isStandalone();
+  show('installDone', pwa.installed);
+  show('installApp', !pwa.installed && !!deferredInstall);
+  show('installHelpIos', !pwa.installed && !deferredInstall && isIos);
+  block.hidden = !(pwa.installed || deferredInstall || isIos);
+}
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; pwa.installable = true; paintInstall(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; pwa.installed = true; paintInstall(); });
+document.getElementById('installApp')?.addEventListener('click', async () => {
+  if (!deferredInstall) return;
+  const prompt = deferredInstall; deferredInstall = null;
+  try { await prompt.prompt(); await prompt.userChoice; } catch { /* dismissed or unsupported */ }
+  paintInstall();
+});
+
+// Installed app: ask the browser to keep this device's progress (Chromium grants this quietly for installed apps).
+async function keepProgress() {
+  try {
+    if (!navigator.storage?.persist) return;
+    pwa.persisted = await navigator.storage.persisted();
+    if (!pwa.persisted && isStandalone()) pwa.persisted = await navigator.storage.persist();
+  } catch { /* unsupported */ }
+}
+
+// Network-first service worker (see sw.js). Only over http(s), never file://.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // The first install also fires this; only a REPLACED worker means a new version.
+    if (hadController) { pwa.updateReady = true; paintStatus(); }
+  });
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60 * 1000);
+    } catch (e) { console.warn('Offline support unavailable:', e); }
+  });
+}
+paintStatus();
+paintInstall();
+keepProgress();
+
 // Test hook (read-only use in browser tests).
-window.__mm = { store, go, parseHash };
+window.__mm = { store, go, parseHash, pwa };
