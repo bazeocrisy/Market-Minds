@@ -1,0 +1,169 @@
+// Learning Dashboard (#/). Every number shown here is computed from saved progress — never invented.
+import { h, progressBar, plural, worldOf, worldTitle, readyLessons, readySkillIds, closeAllModals } from '../ui/dom.js';
+import { pick, BANDS } from '../content/band.js';
+import { lessonById } from '../content/lessons.js';
+import { WORLDS } from '../content/worlds.js';
+import { masteryFor, missQueue } from '../engine/index.js';
+import { certificateCounts } from './certificates.js';
+// Namespace imports: each view exports pendingWork() → null | { kind, label, resume } (unsaved, in-memory work).
+import * as practiceView from './practice.js';
+import * as testView from './test.js';
+import * as journalView from './journal.js';
+import * as thinkingView from './thinking.js';
+import * as learnView from './learn.js';
+
+/** Every piece of unfinished work that only lives in this tab (never throws). */
+export function allPendingWork() {
+  const out = [];
+  for (const v of [practiceView, learnView, testView, thinkingView, journalView]) {
+    try { const w = typeof v.pendingWork === 'function' ? v.pendingWork() : null; if (w && w.resume) out.push(w); } catch (e) { console.error(e); }
+  }
+  return out;
+}
+
+
+const ICONS = {
+  learn: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/>',
+  practice: '<path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
+  thinking: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/>',
+  lab: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/>',
+  test: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+  progress: '<path d="M6 20V10M12 20V4M18 20v-7"/>'
+};
+function icon(name) {
+  const span = h('span', { class: 'card-icon', 'aria-hidden': 'true' });
+  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+  return span;
+}
+
+
+/**
+ * The lesson to continue: the saved lesson if it is unfinished; otherwise the next unfinished ready
+ * lesson AFTER it in curriculum order (World 1 → 2 → 4 …, planned lessons skipped), wrapping to the
+ * first unfinished one; with no saved position, the first unfinished ready lesson.
+ */
+export function currentLesson(state, ready = readyLessons()) {
+  const unfinished = (l) => !state.lessons[l.id]?.completed;
+  const saved = state.current && lessonById(state.current.lessonId);
+  if (saved && saved.status === 'ready' && unfinished(saved)) return { lesson: saved, step: state.current.step || state.lessons[saved.id]?.step || 1 };
+  const i = saved ? ready.findIndex((l) => l.id === saved.id) : -1;
+  const next = ready.slice(i + 1).find(unfinished) || ready.find(unfinished) || null;
+  if (next) return { lesson: next, step: state.lessons[next.id]?.step || 1 };
+  return { lesson: ready[0] || null, step: 1 };
+}
+
+export function render(el, params, ctx) {
+  const state = ctx.store.get();
+  const chosenBand = state.band;
+  const band = ctx.band;
+  const ready = readyLessons();
+  const completed = ready.filter((l) => state.lessons[l.id]?.completed).length;
+  const skillIds = readySkillIds();
+  const levels = skillIds.map((id) => { try { return masteryFor(state, id)?.level; } catch { return null; } });
+  const mastered = levels.filter((l) => l === 'mastered').length;
+  let misses = [];
+  try { misses = missQueue(state) || []; } catch { misses = []; }
+  const hasProgress = Object.keys(state.lessons).length > 0;
+  const readyWorlds = WORLDS.filter((w) => ready.some((l) => worldOf(l) === w));
+
+  const { lesson: cur, step: curStep } = currentLesson(state, ready);
+  const world = cur ? worldOf(cur) : null;
+  const allDone = ready.length > 0 && completed === ready.length;
+  const worldLessons = world ? ready.filter((l) => worldOf(l) === world) : [];
+  const worldDone = worldLessons.filter((l) => state.lessons[l.id]?.completed).length;
+
+  const page = h('section', { class: 'page' });
+  el.append(page);
+
+  // ---------- unfinished work (practice session, test, warm-up, Thinking Lab, journal draft) ----------
+  const pending = allPendingWork();
+  if (pending.length) {
+    page.append(h('section', { class: 'card resume-card', 'aria-labelledby': 'resume-title' },
+      h('h2', { id: 'resume-title', class: 'card-title' }, 'Pick up where you left off'),
+      h('ul', { class: 'resume-list' }, pending.map((w) => h('li', {},
+        h('a', { class: 'btn btn-gold', href: w.resume }, `Resume ${w.label} →`))))));
+  }
+
+  // ---------- current learning panel ----------
+  const name = BANDS[band]?.name || 'Market Explorer';
+  const hero = h('section', { class: 'hero', 'aria-labelledby': 'hero-title' });
+  const copy = h('div', {},
+    h('p', { class: 'eyebrow' }, chosenBand ? `${BANDS[band]?.label || ''} · ${name}`.replace(/^ · /, '') : 'Learning dashboard'),
+    h('h1', { id: 'hero-title', tabindex: '-1' }, chosenBand ? `Welcome, ${name}!` : 'Welcome to Market Minds!'));
+
+  if (!chosenBand) {
+    // Normally unreachable (app.js sends first launches to #/welcome); kept so the dashboard still works.
+    copy.append(
+      h('p', {}, 'First, choose your grade level. No names or sign-ups — ever.'),
+      h('div', { class: 'grade-choice', role: 'group', 'aria-label': 'Choose your grade level' },
+        h('button', { type: 'button', 'data-band': 'explorer', 'aria-pressed': 'false' }, h('strong', {}, 'Grades 3–5'), h('span', {}, 'Market Explorer')),
+        h('button', { type: 'button', 'data-band': 'analyst', 'aria-pressed': 'false' }, h('strong', {}, 'Grades 6–8'), h('span', {}, 'Market Analyst'))));
+  } else if (cur) {
+    const href = `#/learn/${cur.id}/${allDone ? 1 : curStep}`;
+    const label = !hasProgress ? 'Start Learning' : allDone ? 'Review a lesson' : 'Continue Learning';
+    copy.append(
+      h('p', {}, allDone ? 'You have finished every ready lesson. Review one, or keep practicing toward mastery.'
+        : `${hasProgress ? 'Up next' : 'Your first lesson'}: ${pick(cur.title, band).replace(/([^.?!])$/, '$1.')}`),
+      h('div', { class: 'btn-row' },
+        h('a', { class: 'btn btn-primary btn-lg', href }, `${label} →`),
+        h('a', { class: 'btn', href: '#/learn' }, 'All lessons')));
+  } else {
+    copy.append(h('p', {}, 'Lessons are being written right now — please check back soon.'));
+  }
+  copy.append(h('p', { class: 'hero-note' }, 'Pretend prices · No real trading · Progress stays on this device'));
+
+  const side = h('div', { class: 'hero-current' });
+  if (cur) {
+    side.append(
+      h('p', { class: 'label' }, 'Current world'),
+      h('p', { class: 'value' }, world ? worldTitle(world) : '—'),
+      h('p', { class: 'label' }, hasProgress ? 'Current lesson' : 'First lesson'),
+      h('p', { class: 'value' }, `${pick(cur.title, band)}${hasProgress && !state.lessons[cur.id]?.completed ? ` · step ${curStep} of 6` : ''}`),
+      world && readyWorlds.length > 1
+        ? progressBar({ value: worldDone, max: worldLessons.length, label: `${world.title} lessons`, valueText: `${worldDone} of ${worldLessons.length}` })
+        : null,
+      progressBar({ value: completed, max: ready.length, label: 'All lessons complete', valueText: `${completed} of ${ready.length}` }),
+      progressBar({ value: mastered, max: skillIds.length, label: 'Skills mastered', valueText: `${mastered} of ${skillIds.length}` }));
+  } else {
+    side.append(h('p', { class: 'value' }, 'No lessons are ready yet.'));
+  }
+  hero.append(h('div', { class: 'hero-grid' }, copy, side));
+  page.append(hero);
+
+  // ---------- six activity cards ----------
+  const thinkingDone = Object.keys(state.thinking || {}).length;
+  const lastTest = state.tests[state.tests.length - 1];
+  const learnStatus = ready.length
+    ? `${completed} of ${plural(ready.length, 'lesson')} complete${readyWorlds.length > 1 ? ` · ${readyWorlds.length} worlds` : ''}`
+    : 'Lessons in development';
+  const cards = [
+    { href: '#/learn', icon: 'learn', title: 'Learn', text: 'Stories, key words and pictures that explain big ideas.', status: learnStatus },
+    { href: '#/practice', icon: 'practice', title: 'Practice', text: 'Fresh questions with hints, coaching and retries.', status: misses.length ? `${plural(misses.length, 'skill')} ready for review` : 'No misses to review yet' },
+    { href: '#/thinking', icon: 'thinking', title: 'Thinking Lab', text: 'Explain your choices and investigate what could happen.', status: thinkingDone ? `${plural(thinkingDone, 'prompt')} answered` : 'Not started yet' },
+    { href: '#/market-lab', icon: 'lab', title: 'Market Lab', text: 'Explore made-up prices — gains, losses and choosing to wait.', status: state.lab?.runs ? `${plural(state.lab.runs, 'practice run')} · pretend prices` : 'Pretend prices only' },
+    { href: '#/test', icon: 'test', title: 'Test', text: 'Show what you know. No hints until you submit.', status: lastTest ? `Last score: ${lastTest.score} of ${lastTest.total}` : 'No tests taken yet' },
+    { href: '#/progress', icon: 'progress', title: 'My Progress', text: 'Skills you’ve learned — not pretend profits.', status: `${mastered} of ${plural(skillIds.length, 'skill')} mastered` }
+  ];
+  page.append(h('section', { class: 'section', 'aria-labelledby': 'modes-title' },
+    h('h2', { id: 'modes-title' }, 'Ways to learn'),
+    h('ul', { class: 'grid grid-3', style: 'list-style:none;padding:0;margin:0' }, cards.map((c) => h('li', { style: 'margin:0' },
+      h('a', { class: 'card card-link', href: c.href, style: 'height:100%' },
+        icon(c.icon),
+        h('h3', { class: 'card-title' }, c.title),
+        h('p', { class: 'card-text' }, c.text),
+        h('p', { class: 'card-status' }, c.status)))))));
+
+  // ---------- secondary links ----------
+  let certs = { earned: 0, total: 0 };
+  try { certs = certificateCounts(state); } catch { /* ignore */ }
+  page.append(h('nav', { class: 'section', 'aria-label': 'More to explore' },
+    h('h2', { class: 'h3', style: 'font-size:1.1875rem' }, 'More to explore'),
+    h('ul', { class: 'quick-links' },
+      h('li', {}, h('a', { href: '#/dictionary' }, 'Market Dictionary')),
+      h('li', {}, h('a', { href: '#/stories' }, 'Market Stories')),
+      h('li', {}, h('a', { href: '#/journal' }, 'Decision Journal')),
+      h('li', {}, h('a', { href: '#/certificates' }, `Certificates (${certs.earned} earned)`)),
+      h('li', {}, h('a', { href: '#/parent' }, 'Parent & Teacher View')))));
+
+  return () => closeAllModals();
+}

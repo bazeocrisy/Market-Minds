@@ -1,0 +1,10 @@
+{
+  "name": "market-minds",
+  "private": true,
+  "description": "Market Minds: free financial education for grades 3-8 (static site for GitHub Pages). No dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "test:browser": "node tests/browser/run-all.mjs"
+  }
+}

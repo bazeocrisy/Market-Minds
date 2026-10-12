@@ -1,6 +1,98 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#102541"><meta name="description" content="Market Minds helps students in grades 3–8 understand money, markets, futures, and wise decisions."><title>Market Minds | Learn Money. Understand Markets. Think Bigger.</title><link rel="icon" type="image/svg+xml" href="./assets/logo.svg"><link rel="stylesheet" href="./styles.css"></head>
-<body><a class="skip" href="#main">Skip to content</a><header class="top"><a class="brand" href="./"><img src="./assets/logo.svg" alt="" width="46" height="46"><span>MARKET <strong>MINDS</strong></span></a><span class="top-note">Grades 3–8 · Free learning</span></header>
-<main id="main"><section class="hero"><div class="hero-copy"><p class="eyebrow">YOUR MONEY & MARKETS ADVENTURE</p><h1>Big ideas.<br><em>Young minds.</em></h1><p>Discover how prices change, why markets matter, and how to make thoughtful decisions—with stories, practice, and pretend-money experiments.</p><div class="actions"><a class="button" href="#learning">Explore the app <span aria-hidden="true">→</span></a><a class="text-link" href="#about">What's Market Minds?</a></div><p class="fine">Educational only · No real-money trading</p></div><div class="art" role="img" aria-label="Illustration of a rising and falling price chart and symbols for wheat, gold and oil"><div class="art-heading">EVERY PRICE TELLS A STORY</div><svg viewBox="0 0 440 260" aria-hidden="true"><path d="M25 210H418 M25 150H418 M25 90H418 M25 30H418" stroke="#dbe9e6" stroke-width="1"/><path d="M25 190 L85 169 L140 191 L197 128 L254 143 L304 79 L370 107 L411 42" fill="none" stroke="#168d86" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="411" cy="42" r="12" fill="#efbb54"/><circle cx="25" cy="190" r="9" fill="#efbb54"/></svg><div class="art-chips"><span>🌾 Wheat</span><span>🪙 Gold</span><span>⚡ Energy</span></div><p class="chart-caption">Illustrative chart—not a real price forecast.</p></div></section>
-<section class="learning" id="learning"><p class="eyebrow">HOW YOU'LL LEARN</p><h2>Discover. Practice. Think.</h2><p class="intro">Start with familiar stories, build a skill, then use what you've learned.</p><div class="cards"><article class="card"><span class="symbol">📖</span><h3>Learn</h3><p>Simple definitions, pictures, and everyday market stories.</p><span class="status">Curriculum in development</span></article><article class="card"><span class="symbol">✏️</span><h3>Practice</h3><p>Try questions again, get hints, and learn from mistakes.</p><span class="status">Practice engine coming next</span></article><article class="card"><span class="symbol">🧠</span><h3>Thinking Lab</h3><p>Explain your choices and investigate what could happen.</p><span class="status">Activities coming next</span></article><article class="card"><span class="symbol">📈</span><h3>Market Lab</h3><p>Explore made-up prices in a safe, pretend-money environment.</p><span class="status">Simulator coming next</span></article><article class="card"><span class="symbol">✅</span><h3>Test</h3><p>Show what you know without hints and review missed skills.</p><span class="status">Assessments coming next</span></article><article class="card"><span class="symbol">🏆</span><h3>My Progress</h3><p>Track skills learned—not pretend profits made.</p><span class="status">Progress tracking coming next</span></article></div></section>
-<section class="about" id="about"><div><p class="eyebrow">OUR PURPOSE</p><h2>Financial learning belongs to everyone.</h2><p>Created with Black learners in mind and open to all, Market Minds connects everyday life to the language of markets. We teach curiosity, mathematics, uncertainty, responsibility, and confidence—not risky shortcuts to wealth.</p></div><aside><strong>Built for grades 3–8</strong><p>Age-appropriate paths for elementary and middle school students, with visual explanations and accessible practice.</p></aside></section></main><footer><span>© <span id="year">2026</span> Market Minds</span><span>Education only. Futures involve substantial risk and are not suitable for children to trade.</span></footer><script>document.getElementById('year').textContent=new Date().getFullYear();</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102541">
+  <meta name="description" content="Market Minds: a learning app for grades 3–8 about money, markets, futures and wise decisions. Pretend prices, no accounts.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Market Minds">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Market Minds</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- The skip link is handled in js/ui/dom.js (it focuses <main> without changing the hash route). -->
+  <a class="skip" href="#view">Skip to content</a>
+
+  <header class="app-bar">
+    <div class="app-bar-inner">
+      <a class="brand" href="#/">
+        <img class="brand-mark" src="./assets/logo.svg" alt="" width="40" height="40">
+        <span class="brand-word">MARKET <strong>MINDS</strong></span>
+      </a>
+
+      <div class="band-switch" role="group" aria-label="Grade level">
+        <button type="button" class="band-btn" data-band="explorer" aria-pressed="false"><span class="band-long">Grades </span>3–5</button>
+        <button type="button" class="band-btn" data-band="analyst" aria-pressed="false"><span class="band-long">Grades </span>6–8</button>
+      </div>
+
+      <!-- "More" sheet. app.js toggles aria-expanded and .open on #siteNav; js/ui/dom.js moves focus in and closes it on an outside click. -->
+      <button type="button" class="menu-toggle" id="menuToggle" aria-controls="siteNav" aria-expanded="false">
+        <svg class="menu-dots" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        <span class="menu-text">More</span>
+      </button>
+      <div class="more-sheet" id="siteNav">
+        <nav aria-label="More">
+          <p class="nav-label more-labs" id="labsLabel">Labs</p>
+          <ul class="more-links more-labs" aria-labelledby="labsLabel">
+            <li><a href="#/thinking" data-nav="thinking">Thinking Lab</a></li>
+            <li><a href="#/market-lab" data-nav="market-lab">Market Lab</a></li>
+          </ul>
+          <p class="nav-label" id="moreLabel">More</p>
+          <ul class="more-links" aria-labelledby="moreLabel">
+            <li><a href="#/dictionary" data-nav="dictionary">Dictionary</a></li>
+            <li><a href="#/stories" data-nav="stories">Stories</a></li>
+            <li><a href="#/journal" data-nav="journal">Decision Journal</a></li>
+            <li><a href="#/certificates" data-nav="certificates">Certificates</a></li>
+            <li><a href="#/parent" data-nav="parent">Parent &amp; Teacher</a></li>
+          </ul>
+        </nav>
+        <section id="installBlock" class="more-install" hidden aria-labelledby="installTitle">
+          <h2 id="installTitle">Get the app</h2>
+          <button type="button" id="installApp" class="btn btn-primary" hidden>Install Market Minds</button>
+          <p id="installHelpIos" class="small" hidden>On iPhone or iPad: tap the Share button, then “Add to Home Screen.”</p>
+          <p id="installDone" class="small" hidden>Market Minds is installed on this device.</p>
+        </section>
+        <section class="about-safety" aria-labelledby="aboutTitle">
+          <h2 id="aboutTitle">About &amp; safety</h2>
+          <p>Market Minds is for learning only. Every price is pretend; nothing here is real trading or advice.</p>
+          <p>Futures involve substantial risk, including losses larger than the margin deposit, and are not suitable for children to trade.</p>
+          <p>No accounts and no names. Progress is saved only on this device.</p>
+        </section>
+      </div>
+    </div>
+
+    <!-- Main app navigation: a top nav on tablets/desktops, a fixed bottom tab bar on phones. -->
+    <nav class="app-tabs" aria-label="Main">
+      <ul>
+        <li><a href="#/" data-nav=""><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a></li>
+        <li><a href="#/learn" data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/></svg><span>Learn</span></a></li>
+        <li><a href="#/practice" data-nav="practice"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg><span>Practice</span></a></li>
+        <li class="tab-wide"><a href="#/thinking" data-nav="thinking"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/></svg><span>Thinking Lab</span></a></li>
+        <li class="tab-wide"><a href="#/market-lab" data-nav="market-lab"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/></svg><span>Market Lab</span></a></li>
+        <li><a href="#/test" data-nav="test"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Test</span></a></li>
+        <li><a href="#/progress" data-nav="progress"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 20V10M12 20V4M18 20v-7"/></svg><span>Progress</span></a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Offline / update notices. app.js un-hides it and sets data-kind="offline"|"update". -->
+  <div id="appStatus" class="app-status" role="status" aria-live="polite" hidden></div>
+
+  <main id="view" tabindex="-1">
+    <noscript>
+      <section class="page">
+        <h1>Market Minds needs JavaScript</h1>
+        <p>Lessons, practice and progress run in your browser. Please turn on JavaScript, or open Market Minds in a different browser.</p>
+      </section>
+    </noscript>
+  </main>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

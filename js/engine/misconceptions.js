@@ -1,0 +1,63 @@
+// Misconception catalog. Each entry: what the learner probably thought + a clue (never the answer).
+// Question generators tag wrong choices / common numeric errors with these ids; the miss queue tallies them,
+// and Practice My Misses uses the most frequent one as `focus`.
+
+export const MISCONCEPTIONS = {
+  'market-is-a-building': 'It looks like you think a market has to be a store or a building. Clue: a market is any place or way buyers and sellers trade — a sidewalk stand, a yard sale, or a website all count.',
+  'market-any-gathering': 'It looks like you picked a place where people are, but nobody is trading. Clue: look for a buyer giving money and a seller giving goods or a service.',
+  'market-one-side': 'A trade needs both sides. Clue: ask who is buying AND who is selling.',
+  'buyer-seller-swap': 'It looks like the buyer and the seller got switched. Clue: the buyer gives money and gets the item; the seller gives the item and gets money.',
+  'role-goals-swapped': 'It looks like the wants of buyers and sellers got switched. Clue: buyers usually hope to pay less; sellers usually hope to receive more.',
+  'seller-sets-price': 'It looks like you think the seller alone decides the price. Clue: a trade only happens when the buyer agrees to pay it too.',
+  'vocab-mixup': 'Two market words got mixed up. Clue: say each word\'s meaning out loud and look for the one that fits exactly.',
+  'added-instead': 'It looks like you added the numbers. Clue: a change is the difference between two prices — think "how far apart?", which means subtracting.',
+  'wrong-direction': 'Check the direction. Clue: compare the new price with the old price — is the new one bigger or smaller?',
+  'used-wrong-number': 'It looks like you used one of the numbers from the question instead of finding the difference. Clue: find how far apart the two prices are.',
+  'per-unit-vs-total': 'Check whether the question asks about ONE item or ALL of them. Clue: look for words like "each", "per", or "in total" and for how many there are.',
+  'percent-of-new': 'It looks like you divided by the new price. Clue: percent change compares the change with the STARTING (old) price.',
+  'percent-not-divided': 'It looks like you gave the dollar change instead of a percent. Clue: divide the change by the old price, then multiply by 100.',
+  'misread-chart': 'Check which numbers you read. Clue: find the exact labels the question names, then read the value for each one.',
+  'reason-backwards': 'The effect went the opposite way. Clue: when there is less of something, its price usually rises; when there is plenty, it usually falls.',
+  'irrelevant-reason': 'That event would not change how much of the item there is or how much people want it. Clue: look for something that changes supply or demand.',
+  'supply-backwards': 'It looks like more supply was linked to a higher price. Clue: when there is more of something to sell, sellers often lower prices so it all sells.',
+  'demand-backwards': 'It looks like more demand was linked to a lower price. Clue: when more people want something, sellers can often charge more.',
+  'supply-demand-mixup': 'Supply and demand got mixed up. Clue: supply is how much is available to sell; demand is how much buyers want.',
+  'both-change-certain': 'When supply and demand both change, the result is not certain. Clue: the two pushes work against each other — it depends on which change is bigger.',
+  'prices-never-change': 'Prices do change. Clue: think about what happens when there is more or less of something, or when more or fewer people want it.',
+  'agreement-later-price': 'It looks like you used the later market price. Clue: the agreement\'s price was set on the day they agreed, and it does not change.',
+  'agreement-today-trade': 'The trade in the agreement does not happen right away. Clue: the agreement is made today, but the buying and selling happen on a later date.',
+  'can-predict-future': 'Nobody can know a future price for sure. Clue: prices can change for many reasons that are hard to predict.',
+  'past-predicts-future': 'Past prices do not tell us for sure what comes next. Clue: a price that went up can still go down (or stay the same).',
+  'hedge-is-winning': 'Hedging is about certainty, not winning. Clue: an agreement reduces price risk, but it can turn out worse than waiting would have.',
+  'hedge-wrong-side': 'It looks like the wrong side got the credit. Clue: if the market price ends HIGHER than the agreed price, the buyer pays less than the market; if it ends LOWER, the seller receives more than the market.',
+  'only-one-side-risk': 'Both sides face risk. Clue: the market price could move up or down, and each move is bad news for one side.',
+  'margin-is-max-loss': 'Margin is a deposit, not a limit on losses. Clue: if the price moves a lot, losses can be bigger than the deposit.',
+  'leverage-only-gains': 'Leverage works both ways. Clue: it makes gains AND losses bigger compared with the deposit.',
+  'futures-informal': 'Real futures are not informal deals. Clue: futures contracts are standardized and traded on regulated exchanges.',
+  'guaranteed-profit': 'No agreement guarantees a profit. Clue: an agreement sets a price, but nobody knows whether the market will end up higher or lower.',
+  // batch 2: World 2 (rest) and World 4
+  'forward-futures-mixup': 'The features of forwards and futures got switched. Clue: a forward is a private deal where the two sides choose the terms; a futures contract has terms set by the exchange and is traded on a regulated exchange.',
+  'futures-custom-terms': 'In a futures contract, the two traders do not choose the amount, quality, or delivery month. Clue: the exchange standardizes those terms; traders choose how many contracts to trade and at what price.',
+  'standardized-fixed-price': 'Standardized does not mean the exchange sets the price. Clue: the exchange sets the contract terms (amount, quality, delivery months); the price comes from buyers and sellers trading.',
+  'hedger-speculator-swap': 'The hedger and the speculator got switched. Clue: a hedger already has a price risk from their business (they grow, use, or need the item); a speculator has no such risk and takes one on hoping to profit.',
+  'speculator-always-wins': 'Speculators do not always make money. Clue: a speculator takes on price risk, and the price can move the opposite way from what they expected.',
+  'offset-same-direction': 'It looks like the same trade was repeated instead of the opposite one. Clue: to close a position you make the opposite trade — bought → sell, sold → buy.',
+  'must-take-delivery': 'Most futures contracts never end in delivery. Clue: traders usually close (offset) their position with an opposite trade before the delivery date.',
+  'offset-no-gain-loss': 'Closing a position early still locks in a gain or a loss. Clue: compare the price where the position was opened with the price where it was closed.',
+  'candle-open-close-mixup': 'The open and the close got switched. Clue: on an up candle (hollow body, ▲) the open is at the BOTTOM of the body; on a down candle (filled body, ▼) the open is at the TOP.',
+  'candle-wick-body-mixup': 'The body and the wicks got mixed up. Clue: the body runs from the open to the close; the thin wicks reach out to the high and the low.',
+  'range-body-only': 'It looks like only the body was measured. Clue: the range runs from the top of the upper wick (the high) to the bottom of the lower wick (the low).',
+  'long-short-swap': 'Long and short got switched. Clue: long means you bought and gain when the price rises; short means you sold and gain when the price falls.',
+  'long-short-names': '"Long" and "short" name the side you took, not the amount or the time. Clue: long = bought first; short = sold first.',
+  'position-cant-lose': 'Every position can lose. Clue: a long position loses when the price falls, and a short position loses when the price rises.',
+  'chart-explains-why': 'A price chart shows WHAT happened, not WHY. Clue: to know why a price moved, you need other information, like news about supply or demand.',
+  'chart-hides-past': 'A chart does show what already happened. Clue: past prices can be read right off the chart — what it cannot show is the future, or the reasons.'
+};
+
+export const GENERIC_FEEDBACK = {
+  choice: 'Not quite. Reread the question and think about each choice — which one fits every detail?',
+  number: 'Not quite. Check your steps: which numbers did you use, and did you subtract, add, or multiply?',
+  match: 'Some matches are not right yet. Start with the pair you are surest about, then check the rest.',
+  invalid: 'Type a number, like 4 or 4.50.',
+  blank: 'Choose or type an answer first.'
+};
