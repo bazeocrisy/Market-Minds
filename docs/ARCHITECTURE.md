@@ -106,11 +106,13 @@ A view module exports `render(el, params, ctx)` and may return a cleanup functio
 
 ### Visuals (`js/ui/visuals.js`, Agent 4)
 
-`renderVisual(spec)` → element with `role="img"` + text alternative. Kinds: `line {title, unit, points:[{label,value}]}`, `bars {title, unit, items:[{label,value}]}`, `candles {title, candles:[{label,open,high,low,close}]}`, `priceTags {items:[{label,price,note?}]}`, `supplyDemand {item, supply, demand}` (each `'more'|'less'|'same'`), `agreement {item, buyer, seller, price, quantity, when}`, `image {asset, alt, caption}` (named placeholder until art exists).
+`renderVisual(spec)` → element with `role="img"` + text alternative. Kinds: `line {title, unit, points:[{label,value}]}`, `bars {title, unit, items:[{label,value}]}`, `candles {title, candles:[{label,open,high,low,close}]}`, `priceTags {items:[{label,price,note?}]}`, `supplyDemand {item, supply, demand}` (each `'more'|'less'|'same'`), `agreement {item, buyer, seller, price, quantity, when}`, `image {asset, alt, caption}` (named placeholder until art exists). Optional second argument `{ band }`. SVG kinds use `role="img"` + summary and a "Show the numbers" table; HTML kinds (`priceTags`, `agreement`) stay readable text (`role="group"`).
+
+Market Lab route accepts `?activity=watch|paper&scenario=<id>`. `lab.decisions` entries: `{ scenarioId, activity: 'price-watch'|'paper-practice', choice, reasonGiven, date }` — pretend profit/loss is never stored as a score.
 
 ### Content (`js/content/`, Agent 1)
 
-`skills.js` (skill ids are FIXED — see below), `worlds.js`, `lessons.js` (`LESSONS`, `lessonById`), `glossary.js`, `stories.js`. Lesson: `{ id, world, number, title, status: 'ready'|'planned', skills, prereqs, vocab, objectives: BandText[], steps }` with steps in the required order `discover → definition → visual → together → check → next`. See `js/content/lessons.js` header comment for the step shapes.
+`skills.js` (skill ids are FIXED — see below), `worlds.js`, `lessons.js` (`LESSONS`, `lessonById`), `glossary.js`, `stories.js`. Lesson: `{ id, world, number, title, status: 'ready'|'planned', skills, prereqs, vocab, objectives: BandValue<string[]>, steps }` with steps in the required order `discover → definition → visual → together → check → next`. See `js/content/lessons.js` header comment for the step shapes.
 
 ### Skill ids (fixed for v1)
 
