@@ -4,11 +4,11 @@ import { store } from './store.js';
 
 const ROUTES = {
   '': 'dashboard', learn: 'learn', practice: 'practice', thinking: 'thinking', 'market-lab': 'market-lab',
-  test: 'test', progress: 'progress', dictionary: 'dictionary', stories: 'stories', journal: 'journal', parent: 'parent'
+  test: 'test', progress: 'progress', dictionary: 'dictionary', stories: 'stories', journal: 'journal', parent: 'parent', certificates: 'certificates'
 };
 const TITLES = {
   dashboard: 'Dashboard', learn: 'Learn', practice: 'Practice', thinking: 'Thinking Lab', 'market-lab': 'Market Lab',
-  test: 'Test', progress: 'My Progress', dictionary: 'Market Dictionary', stories: 'Market Stories', journal: 'Decision Journal', parent: 'Parent & Teacher View'
+  test: 'Test', progress: 'My Progress', dictionary: 'Market Dictionary', stories: 'Market Stories', journal: 'Decision Journal', parent: 'Parent & Teacher View', certificates: 'Certificates'
 };
 
 const viewEl = document.getElementById('view');

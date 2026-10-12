@@ -51,6 +51,7 @@ Content, engine and UI are separate layers: content never imports engine/ui; eng
 | `#/stories`, `#/stories/<id>` | `stories.js` | Market Stories |
 | `#/journal` | `journal.js` | Decision Journal |
 | `#/parent` | `parent.js` | Parent/Teacher view (read-only) |
+| `#/certificates` | `certificates.js` | printable skill-milestone certificates |
 
 A view module exports `render(el, params, ctx)` and may return a cleanup function. `params` = path segments after the first (`['w1l1','3']`), `ctx = { store, band, go(hash), query }`. Views must not keep timers or speech running after cleanup.
 
@@ -114,7 +115,7 @@ Market Lab route accepts `?activity=watch|paper&scenario=<id>`. `lab.decisions` 
 
 `skills.js` (skill ids are FIXED — see below), `worlds.js`, `lessons.js` (`LESSONS`, `lessonById`), `glossary.js`, `stories.js`. Lesson: `{ id, world, number, title, status: 'ready'|'planned', skills, prereqs, vocab, objectives: BandValue<string[]>, steps }` with steps in the required order `discover → definition → visual → together → check → next`. See `js/content/lessons.js` header comment for the step shapes.
 
-### Skill ids (fixed for v1)
+### Skill ids (fixed; batch 2 added 2026-10-12)
 
 | Skill id | Lesson | Name |
 |---|---|---|
@@ -126,6 +127,13 @@ Market Lab route accepts `?activity=watch|paper&scenario=<id>`. `lab.decisions` 
 | `future-agreement` | w2l1 | Agreeing on a future price |
 | `hedge-outcome` | w2l1 | Who did the agreement help? |
 | `futures-risk` | w2l1 | Uncertainty and risk |
+| `futures-standardization` | w2l2 | Forward vs. futures |
+| `hedgers-speculators` | w2l3 | Hedgers and speculators |
+| `offset-delivery` | w2l4 | Closing out a position |
+| `line-chart-reading` | w4l1 | Reading line charts |
+| `candlestick-reading` | w4l2 | Reading candlesticks |
+| `long-short` | w4l3 | Long and short |
+| `chart-limits` | w4l4 | What charts cannot tell you |
 
 ## File ownership matrix
 
@@ -136,6 +144,6 @@ Agents edit only files they own. Anything else → report to the Lead, who makes
 | Lead (Claude) | `docs/ARCHITECTURE.md`, `STATUS.md`, `README.md`, `package.json`, `.nojekyll`, `js/app.js`, `js/store.js`, `js/content/band.js`, `js/content/skills.js` (ids), `tests/unit/store.test.mjs` |
 | Agent 1 Curriculum Architect | `js/content/lessons.js`, `js/content/worlds.js`, `js/content/glossary.js`, `js/content/stories.js`, `docs/curriculum/**`, `docs/ASSET-MANIFEST.md`, `tests/unit/content.test.mjs`; may edit names/descriptions in `skills.js` |
 | Agent 2 Learning Engine | `js/engine/**`, `tests/unit/engine*.test.mjs` |
-| Agent 3 UI/UX | `index.html`, `styles.css`, `assets/placeholders/**`, `js/ui/dom.js`, `js/ui/question.js`, `js/ui/speech.js`, `js/ui/vocab.js`, `js/views/{dashboard,learn,practice,test,progress,dictionary,stories,journal,parent}.js` |
+| Agent 3 UI/UX | `js/views/certificates.js`, `index.html`, `styles.css`, `assets/placeholders/**`, `js/ui/dom.js`, `js/ui/question.js`, `js/ui/speech.js`, `js/ui/vocab.js`, `js/views/{dashboard,learn,practice,test,progress,dictionary,stories,journal,parent}.js` |
 | Agent 4 Interactive Learning | `js/ui/visuals.js`, `js/lab/**`, `js/content/thinking.js`, `js/content/market-scenarios.js`, `js/views/thinking.js`, `js/views/market-lab.js`, `tests/unit/lab*.test.mjs`, `tests/unit/visuals.test.mjs` |
 | Agent 5 QA & Accessibility | `tests/browser/**`, `tests/lib/**`, `docs/QA-REPORT.md` |
