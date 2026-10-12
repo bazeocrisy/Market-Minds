@@ -102,6 +102,11 @@ export const GLOSSARY = [
     example: { explorer: '30 students want gel pens, but there are only 10. That is a shortage.', analyst: 'Shortages tend to push prices up as buyers compete.' }
   },
   {
+    id: 'scarcity', term: 'scarcity', say: 'SKAIR-sih-tee', world: 1,
+    def: { explorer: 'When there is not enough of something for everyone who wants it.', analyst: 'The basic condition that wants are greater than the resources available, so people must choose and prices help decide who gets what.' },
+    example: { explorer: 'Only 5 tickets are left and 20 kids want one. Tickets are scarce.', analyst: 'When a frost destroys part of an orange harvest, oranges become scarcer and their price tends to rise.' }
+  },
+  {
     id: 'surplus', term: 'surplus', say: 'SUR-plus', world: 1,
     def: { explorer: 'When there is more of something to sell than people want to buy.', analyst: 'When the amount supplied is greater than the amount demanded at the current price.' },
     example: { explorer: '100 pens but only 25 buyers is a surplus.', analyst: 'Sellers often cut prices to clear a surplus.' }

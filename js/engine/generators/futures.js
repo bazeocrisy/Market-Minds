@@ -285,7 +285,7 @@ export const FUTURES_TEMPLATES = [
         prompt: `Why might ${who} agree ahead of time on a price for ${g.item}, even though the agreement could turn out worse than waiting?`,
         correct: buyerSide ? 'To know the cost ahead of time and reduce price risk, even if the market price ends up lower.' : 'To know what they will be paid ahead of time and reduce price risk, even if the market price ends up higher.',
         wrongs: [['To be sure of making the most money possible.', 'hedge-is-winning'], ['Because they know which way the price will move.', 'can-predict-future'], ['So they never have to pay or deliver anything.', 'agreement-today-trade']],
-        hints: ['Think about how it feels to NOT know a price you will need to plan around.', 'A [[hedge]] is about certainty — knowing your price — not about winning.', 'Which choice mentions reducing price risk AND admits it could turn out worse?'],
+        hints: ['Think about how it feels to NOT know a price you will need to plan around.', 'A [[hedging|hedge]] is about certainty — knowing your price — not about winning.', 'Which choice mentions reducing price risk AND admits it could turn out worse?'],
         explanation: `${cap(who)} gives up the chance of a better price in exchange for certainty. Knowing the price ahead of time makes planning easier and reduces price risk — that is what hedging is for. Nobody knows which way prices will move.`
       };
     }
@@ -335,10 +335,10 @@ export const FUTURES_TEMPLATES = [
     id: 'ho-fill', skill: 'hedge-outcome', kind: 'vocab', type: 'fill', targets: ['hedge-is-winning', 'hedge-wrong-side'],
     make(c) {
       const F = [
-        { s: 'A [[hedge]] reduces [[price-risk|price risk]], but it can mean giving up some possible ___.', c: 'benefit', w: [['deliveries', 'vocab-mixup'], ['buyers', 'buyer-seller-swap'], ['rules', 'futures-informal']] },
+        { s: 'A [[hedging|hedge]] reduces [[price-risk|price risk]], but it can mean giving up some possible ___.', c: 'benefit', w: [['deliveries', 'vocab-mixup'], ['buyers', 'buyer-seller-swap'], ['rules', 'futures-informal']] },
         { s: 'If the market price ends higher than the agreed price, the ___ comes out ahead.', c: 'buyer', w: [['seller', 'hedge-wrong-side'], ['both sides', 'hedge-is-winning'], ['nobody', 'agreement-later-price']] },
         { s: 'If the market price ends lower than the agreed price, the ___ comes out ahead.', c: 'seller', w: [['buyer', 'hedge-wrong-side'], ['both sides', 'hedge-is-winning'], ['nobody', 'agreement-later-price']] },
-        { s: 'The main goal of a [[hedge]] is ___, not winning.', c: 'certainty', w: [['profit', 'hedge-is-winning'], ['luck', 'can-predict-future'], ['speed', 'vocab-mixup']] }
+        { s: 'The main goal of a [[hedging|hedge]] is ___, not winning.', c: 'certainty', w: [['profit', 'hedge-is-winning'], ['luck', 'can-predict-future'], ['speed', 'vocab-mixup']] }
       ];
       const [i, f] = c.pickI(F);
       return {
