@@ -16,12 +16,37 @@ Lead Architect: Claude. Branch: `feature/market-minds-v1`. Never merge to `main`
 
 Decision: keep the static GitHub Pages architecture — plain HTML/CSS and native ES modules, no build step, no runtime dependencies. All URLs are relative so the app works under `/Market-Minds/`. A `.nojekyll` file stops the legacy Jekyll build from touching files.
 
+## App-first requirement (owner directive, 2026-10-12)
+
+**Market Minds is an educational application, not a website.** The original `index.html` landing page was only a branding foundation; its marketing layout is not the student experience. Opening Market Minds puts the child straight inside a polished learning app.
+
+| # | Requirement | Implementation |
+|---|---|---|
+| 1 | App-first launch | No landing page. First launch (no grade chosen) → full-screen onboarding `#/welcome` (choose Grades 3–5 or 6–8, no personal info) → dashboard. Returning students land on their saved dashboard. `app.js` redirects every route to `#/welcome` until a grade is chosen. |
+| 2 | Application shell | Persistent compact branded app bar (logo, current grade switch, More menu) + app navigation for Learn, Practice, Thinking Lab, Market Lab, Test, My Progress. Each is a dedicated view; no long promotional scrolling pages. |
+| 3 | Navigation | Hash routes managed by `app.js`; short screen transitions (fade/slide ≤200 ms, disabled under `prefers-reduced-motion`). Lessons, practice and tests show one concept/task at a time with Back, Next, Hint and Try Again where appropriate. Browser back/forward and refresh restore the screen. |
+| 4 | Dashboard | Current world, current lesson, true mastery progress, Continue Learning, six working activity cards. |
+| 5 | Responsive | Phones (<768px): compact app bar + fixed bottom tab bar (Home, Learn, Practice, Labs, Progress; Test/Market Lab reachable from Home and the More sheet), safe-area insets, ≥44px targets, full-height app layout. Tablet/desktop: top app nav, content constrained (reading width ≈ 68ch for lesson text, dashboard grid max ≈ 1200px). |
+| 6 | PWA | `manifest.webmanifest` (name, short_name, `display: standalone`, theme/background colors, start_url/scope `./`), PNG icons 192/512 + maskable 512 + apple-touch-icon 180, `sw.js` service worker (below). |
+| 7 | Student-first | No marketing hero, pricing, promotional footer or external navigation. The educational-only / futures-risk notice stays (Market Lab banner + a short line in More → About), not as a website footer. |
+| 8 | Preserve education | Grade pathways, illustration slots (Black children and families), Read to Me, tap-a-word, Practice with hints, Practice My Misses, Thinking Lab, Market Lab, Test, local progress — unchanged. |
+| 9 | Testing | Browser suites cover first-launch onboarding, return visits, navigation/transitions, mobile tab bar, installability (CDP `Page.getInstallabilityErrors`, manifest fields, icons load), offline fallback (service worker + `Network.emulateNetworkConditions` offline), cache versioning, and progress persistence. |
+
+### Offline caching rules (`sw.js`, Lead)
+- One versioned cache, `mm-<CACHE_VERSION>`. `install` precaches the full app-shell file list (`PRECACHE`); a unit test fails if that list drifts from the files on disk.
+- **Network-first** for every same-origin GET: online students always get the newest files, and the cache is refreshed as they go. Only when the network fails is the cached copy served; navigations fall back to the cached `index.html`.
+- `activate` deletes every cache that is not the current version and calls `clients.claim()`; new workers `skipWaiting()`. Obsolete versions are therefore never kept or served when online.
+- Never caches cross-origin requests or non-GET requests. localStorage progress is untouched by the worker.
+- Registered from `app.js` only over http(s) (not `file://`), scope `./` so it works under `/Market-Minds/`.
+
 ## Runtime architecture
 
 ```
-index.html            shell: header (logo, nav, grade selector, mobile menu), <main id="view">, footer
+index.html            app shell: app bar (logo, grade switch, More), app nav (top on desktop, bottom tab bar on phones), <main id="view">
 styles.css            single design system (tokens, components, responsive, reduced motion)
-js/app.js             router (hash routes) + shell wiring; lazy-loads views
+js/app.js             router (hash routes), first-launch gate, screen transitions, SW registration; lazy-loads views
+manifest.webmanifest  PWA manifest; assets/icons/ PNG icons
+sw.js                 service worker (versioned, network-first offline cache)
 js/store.js           local progress persistence (versioned, validated, cross-tab safe)
 js/content/           CURRICULUM DATA ONLY (no DOM, no scoring)
 js/engine/            LEARNING LOGIC ONLY (no DOM): generators, checking, sessions, mastery
@@ -38,7 +63,8 @@ Content, engine and UI are separate layers: content never imports engine/ui; eng
 
 | Route | View module | Purpose |
 |---|---|---|
-| `#/` | `dashboard.js` | Learning Dashboard |
+| `#/welcome` | `welcome.js` | first-launch onboarding (grade choice) |
+| `#/` | `dashboard.js` | Learning Dashboard (returning students) |
 | `#/learn` | `learn.js` | worlds + lessons list |
 | `#/learn/<lessonId>` / `#/learn/<lessonId>/<step>` | `learn.js` | lesson player (step is 1-based) |
 | `#/practice` | `practice.js` | chooser (world, lesson, skill, difficulty, Practice My Misses, Mixed Review) |
@@ -141,9 +167,9 @@ Agents edit only files they own. Anything else → report to the Lead, who makes
 
 | Owner | Files |
 |---|---|
-| Lead (Claude) | `docs/ARCHITECTURE.md`, `STATUS.md`, `README.md`, `package.json`, `.nojekyll`, `js/app.js`, `js/store.js`, `js/content/band.js`, `js/content/skills.js` (ids), `tests/unit/store.test.mjs` |
+| Lead (Claude) | `sw.js`, `manifest.webmanifest`, `assets/icons/**`, `tests/unit/pwa.test.mjs`, `docs/ARCHITECTURE.md`, `STATUS.md`, `README.md`, `package.json`, `.nojekyll`, `js/app.js`, `js/store.js`, `js/content/band.js`, `js/content/skills.js` (ids), `tests/unit/store.test.mjs` |
 | Agent 1 Curriculum Architect | `js/content/lessons.js`, `js/content/worlds.js`, `js/content/glossary.js`, `js/content/stories.js`, `docs/curriculum/**`, `docs/ASSET-MANIFEST.md`, `tests/unit/content.test.mjs`; may edit names/descriptions in `skills.js` |
 | Agent 2 Learning Engine | `js/engine/**`, `tests/unit/engine*.test.mjs` |
-| Agent 3 UI/UX | `js/views/certificates.js`, `index.html`, `styles.css`, `assets/placeholders/**`, `js/ui/dom.js`, `js/ui/question.js`, `js/ui/speech.js`, `js/ui/vocab.js`, `js/views/{dashboard,learn,practice,test,progress,dictionary,stories,journal,parent}.js` |
+| Agent 3 UI/UX | `js/views/welcome.js`, `js/views/certificates.js`, `index.html`, `styles.css`, `assets/placeholders/**`, `js/ui/dom.js`, `js/ui/question.js`, `js/ui/speech.js`, `js/ui/vocab.js`, `js/views/{dashboard,learn,practice,test,progress,dictionary,stories,journal,parent}.js` |
 | Agent 4 Interactive Learning | `js/ui/visuals.js`, `js/lab/**`, `js/content/thinking.js`, `js/content/market-scenarios.js`, `js/views/thinking.js`, `js/views/market-lab.js`, `tests/unit/lab*.test.mjs`, `tests/unit/visuals.test.mjs` |
 | Agent 5 QA & Accessibility | `tests/browser/**`, `tests/lib/**`, `docs/QA-REPORT.md` |
