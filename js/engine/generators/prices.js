@@ -297,7 +297,7 @@ export const PRICE_TEMPLATES = [
       const start = c.int(0, 7), labels = [0, 1, 2, 3, 4].map((k) => MONTHS[(start + k) % 12]);
       const base = c.price(4, 9), jump = c.price(2, 5), k = c.int(2, 3);
       const wig = () => (c.A ? c.int(-10, 10) : 0);
-      const v = labels.map((_, x) => Math.max(100, x < k ? base + wig() : up ? base + jump + wig() : base - Math.min(jump, base - 150) + wig()));
+      const v = labels.map((_, x) => Math.max(100, x < k ? base + wig() : up ? base + jump + wig() : base - Math.min(jump, base - (c.A ? 150 : 100)) + wig()));
       const [ii, irr] = c.pickI(IRRELEVANT);
       return {
         sig: `${ei}.${start}.${base}.${jump}.${k}.${ii}`,

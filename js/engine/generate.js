@@ -10,10 +10,12 @@ import { MARKET_TEMPLATES, MARKET_TEACH } from './generators/market.js';
 import { PRICE_TEMPLATES, PRICE_TEACH } from './generators/prices.js';
 import { SUPPLY_TEMPLATES, SUPPLY_TEACH } from './generators/supply.js';
 import { FUTURES_TEMPLATES, FUTURES_TEACH } from './generators/futures.js';
+import { FUTURES2_TEMPLATES, FUTURES2_TEACH } from './generators/futures2.js';
+import { CHART_TEMPLATES, CHART_TEACH } from './generators/charts.js';
 
 export const DIFFICULTIES = ['easy', 'medium', 'challenge'];
-const TEMPLATES = [...MARKET_TEMPLATES, ...PRICE_TEMPLATES, ...SUPPLY_TEMPLATES, ...FUTURES_TEMPLATES];
-const TEACH = { ...MARKET_TEACH, ...PRICE_TEACH, ...SUPPLY_TEACH, ...FUTURES_TEACH };
+const TEMPLATES = [...MARKET_TEMPLATES, ...PRICE_TEMPLATES, ...SUPPLY_TEMPLATES, ...FUTURES_TEMPLATES, ...FUTURES2_TEMPLATES, ...CHART_TEMPLATES];
+const TEACH = { ...MARKET_TEACH, ...PRICE_TEACH, ...SUPPLY_TEACH, ...FUTURES_TEACH, ...FUTURES2_TEACH, ...CHART_TEACH };
 const BY_SKILL = {};
 for (const t of TEMPLATES) (BY_SKILL[t.skill] ||= []).push(t);
 

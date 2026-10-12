@@ -325,6 +325,163 @@ export const STORIES = [
         }
       })
     ]
+  },
+  {
+    id: 'two-reasons-to-trade',
+    world: 2,
+    lesson: 'w2l3',
+    title: 'Two Reasons to Trade',
+    text: {
+      explorer: [
+        'After Career Day, Malik walks home with his mom, Ms. Harris. "Why do you use futures, Mom?" he asks.',
+        '"Flour is a big part of what our bread costs," she says. "If wheat prices jump, our bakery could be in trouble. Locking in a price helps me plan."',
+        '"Ms. Tate trades wheat too, but she has no bakery," Malik says. "She is a [[speculator]]," says Mom, "and she takes a risk on purpose, hoping to make money, but sometimes she loses."',
+        '"So you are trying to stay safe, and she is trying to win?" Malik asks. "That is close," says Mom, "but neither of us can see the future."'
+      ],
+      analyst: [
+        'Walking home from Career Day, Malik asks his mom why Harris Family Bakery uses wheat futures at all.',
+        '"Flour is one of our biggest costs," Ms. Harris explains. "If wheat prices jump, our costs jump, and we can\'t raise bread prices every week. So we lock in part of our wheat cost ahead of time. That makes us a [[hedger]]. Sometimes the market price ends up lower and we pay more than we had to; we accept that for the certainty."',
+        '"Ms. Tate said she has no wheat at all," Malik says. "Right. She is a [[speculator]]: she takes on price risk on purpose, hoping to profit. She told me about a month when a surprise rainstorm moved prices against her and she lost much more than she expected. Speculating is risky, and the CFTC warns that many individuals lose all of their money."',
+        'Malik thinks about it. "So the difference isn\'t buying or selling. It\'s why you trade." His mom smiles. "Exactly. And either way, nobody gets to see the future price."'
+      ]
+    },
+    image: {
+      asset: 'assets/illustrations/story-two-reasons-to-trade.webp',
+      alt: 'A boy and his mother, still wearing her bakery apron, walk home along a tree-lined neighborhood sidewalk in the late afternoon, talking.',
+      caption: 'Malik and his mom talk about why people trade.'
+    },
+    questions: [
+      sq('two-reasons-to-trade', 1, {
+        skill: 'hedgers-speculators', difficulty: 'easy', kind: 'scenario',
+        prompt: 'Why does Ms. Harris use wheat futures?',
+        choices: [
+          { id: 'a', text: 'To protect her bakery from a rise in wheat prices, a risk she already has.' },
+          { id: 'b', text: 'To try to win money by guessing prices, like a game.', misconception: 'hedger-as-speculator' },
+          { id: 'c', text: 'Because futures always save money.', misconception: 'hedging-always-wins' }
+        ],
+        answer: 'a',
+        hints: ['What does Ms. Harris\'s bakery need to buy?', 'Is she trying to shrink a worry she already has, or take on a new one?'],
+        explanation: 'Ms. Harris already buys wheat for her bakery, so rising wheat prices are a risk she already has. She uses futures to make that risk smaller. That makes her a hedger.',
+        teach: 'A hedger already has a price risk from their work and uses futures to reduce it. A speculator has no such risk and takes one on, hoping to profit. Hedging can also mean paying more than the market price later.',
+        misconceptions: {
+          'hedger-as-speculator': 'Ms. Harris is not playing a guessing game. She is protecting the bakery from a risk it already has.',
+          'hedging-always-wins': 'Ms. Harris says sometimes she pays more than she had to. Hedging gives certainty, not savings every time.'
+        }
+      }),
+      sq('two-reasons-to-trade', 2, {
+        skill: 'hedgers-speculators', difficulty: 'medium', kind: 'concept',
+        prompt: 'What makes Ms. Tate a speculator?',
+        choices: [
+          { id: 'a', text: 'She has no wheat business and takes on price risk hoping to make money.' },
+          { id: 'b', text: 'She sells futures, and anyone who sells is a speculator.', misconception: 'direction-decides-role' },
+          { id: 'c', text: 'She always makes money because she is an expert.', misconception: 'speculators-always-win' }
+        ],
+        answer: 'a',
+        hints: ['Does Ms. Tate grow, store or use any wheat?', 'Malik figures out that the difference is not buying or selling. What is it?'],
+        explanation: 'Ms. Tate has no wheat to protect. She trades to try to profit from price changes, taking on risk she did not have before. That is what makes her a speculator.',
+        teach: 'The role comes from the reason for trading, not the direction. Hedgers reduce a risk they already have. Speculators take on new risk hoping to profit, and they can lose, sometimes a lot.',
+        misconceptions: {
+          'direction-decides-role': 'Farmers who hedge also sell futures. The reason for trading decides the role.',
+          'speculators-always-win': 'Ms. Tate told the class about a month when she lost money. Experts cannot see the future either.'
+        }
+      }),
+      sq('two-reasons-to-trade', 3, {
+        skill: 'futures-risk', difficulty: 'challenge', kind: 'concept',
+        prompt: 'Which sentence about Ms. Harris and Ms. Tate is true?',
+        choices: [
+          { id: 'a', text: 'Both face risk: Ms. Harris may pay more than the market price, and Ms. Tate may lose money.' },
+          { id: 'b', text: 'Ms. Harris has no risk at all because she hedges.', misconception: 'hedging-removes-all-risk' },
+          { id: 'c', text: 'Ms. Tate cannot lose, because she trades every day.', misconception: 'experience-removes-risk' }
+        ],
+        answer: 'a',
+        hints: ['What does Ms. Harris say can happen when she locks in a price?', 'Ms. Tate trades often. Does that mean she always gains?'],
+        explanation: 'Hedging reduces one risk but can mean paying more than the later market price. Speculating takes on risk directly and can lead to losses. Nobody in the story can see the future price.',
+        teach: 'Every choice about future prices carries risk because the future is uncertain. Hedging trades away the chance of a better price for certainty; speculating accepts the chance of loss in hopes of gain.',
+        misconceptions: {
+          'hedging-removes-all-risk': 'Hedging reduces price uncertainty, but Ms. Harris may pay more than the market price.',
+          'experience-removes-risk': 'Trading often does not remove risk. Ms. Tate says she sometimes loses.'
+        }
+      })
+    ]
+  },
+  {
+    id: 'chart-detectives',
+    world: 4,
+    lesson: 'w4l4',
+    title: 'The Chart Detectives',
+    text: {
+      explorer: [
+        'Deja and Jaylen are the Chart Detectives at Market Club. Ms. Brooks gives them a [[line-chart]] of a pretend cocoa price for five days: $3, $4, $6, $5, $7.',
+        '"Day 5 is the highest!" says Jaylen. "And Day 1 is the lowest," adds Deja.',
+        'Then Jaylen grins. "It zigzags, so tomorrow it goes down!" Deja says, "Detectives use clues, and the chart has no clues about tomorrow."',
+        'Ms. Brooks writes on the board: "Describe what happened. Do not pretend to know what will happen."'
+      ],
+      analyst: [
+        'Deja and Jaylen are the Chart Detectives at Market Club. Their case: a [[line-chart]] of a pretend cocoa price over five days: $3.00, $4.00, $6.00, $5.00, $7.00.',
+        'First they gather the facts. The high is $7.00 on Day 5; the low is $3.00 on Day 1. From Day 1 to Day 5, the price rose $4.00, a [[percent-change]] of about 133%.',
+        'Then Jaylen spots what he calls a [[pattern]]: up, up, down, up. "It zigzags," he says. "So Day 6 has to be a down day." Deja is not convinced. "That\'s a guess, not a clue. A weather report or a big order could change everything, and none of that is on the chart."',
+        'Ms. Brooks writes their final report on the board: "Facts: the price rose from $3.00 to $7.00. Prediction for Day 6: not enough information." Jaylen laughs. "Case closed. For now."'
+      ]
+    },
+    image: {
+      asset: 'assets/illustrations/story-chart-detectives.webp',
+      alt: 'Two students wearing playful detective hats study a large printed line chart with a magnifying glass while their teacher smiles nearby.',
+      caption: 'Deja and Jaylen investigate a chart.'
+    },
+    questions: [
+      sq('chart-detectives', 1, {
+        skill: 'line-chart-reading', difficulty: 'easy', kind: 'chart',
+        prompt: 'On which day was the pretend cocoa price lowest?',
+        visual: { kind: 'line', title: 'Pretend cocoa price', unit: '$', points: [{ label: 'Day 1', value: 3 }, { label: 'Day 2', value: 4 }, { label: 'Day 3', value: 6 }, { label: 'Day 4', value: 5 }, { label: 'Day 5', value: 7 }] },
+        choices: [
+          { id: 'a', text: 'Day 1' },
+          { id: 'b', text: 'Day 4', misconception: 'first-drop-is-lowest' },
+          { id: 'c', text: 'Day 5', misconception: 'high-low-swap' }
+        ],
+        answer: 'a',
+        hints: ['Look for the dot closest to the bottom of the chart.', 'A day when the price dropped is not always the lowest day. Compare all the prices.'],
+        explanation: 'Day 1 has the lowest dot, at $3. Day 4 dropped from Day 3, but at $5 it was still higher than Day 1.',
+        teach: 'To find the lowest price on a line chart, find the dot closest to the bottom, then look down to see the time. A drop is not the same as the lowest point.',
+        misconceptions: {
+          'first-drop-is-lowest': 'The price dropped on Day 4, but only to $5. Is there a lower dot?',
+          'high-low-swap': 'Day 5 is the highest dot. Lowest means closest to the bottom.'
+        }
+      }),
+      sq('chart-detectives', 2, {
+        skill: 'chart-limits', difficulty: 'medium', kind: 'mistake-detective',
+        prompt: 'Jaylen says, "It zigzags, so Day 6 has to go down." What is the problem with his idea?',
+        choices: [
+          { id: 'a', text: 'A pattern in the past does not decide the future; Day 6 could go up, down or stay the same.' },
+          { id: 'b', text: 'Nothing. Zigzag patterns always repeat.', misconception: 'pattern-always-works' },
+          { id: 'c', text: 'He is wrong because it will definitely go up on Day 6.', misconception: 'opposite-certainty' }
+        ],
+        answer: 'a',
+        hints: ['Does the chart have any information about Day 6?', 'What did Deja say a chart is missing?'],
+        explanation: 'Jaylen noticed a shape in past prices, but shapes can fail. News or a big order could move the price either way, and none of that is on the chart.',
+        teach: 'Charts describe what happened. Patterns are shapes in the past, and they can fail without warning. Being sure of the opposite is the same mistake.',
+        misconceptions: {
+          'pattern-always-works': 'No pattern always repeats. New information can change prices at any time.',
+          'opposite-certainty': 'Being sure it will go UP is the same mistake as being sure it will go down.'
+        }
+      }),
+      sq('chart-detectives', 3, {
+        skill: 'chart-limits', difficulty: 'challenge', kind: 'concept',
+        prompt: 'Why is "not enough information" a good answer for the Day 6 prediction?',
+        choices: [
+          { id: 'a', text: 'Because the chart only records the past, and honest thinkers say so when the facts cannot answer a question.' },
+          { id: 'b', text: 'Because the detectives were too lazy to decide.', misconception: 'waiting-is-lazy' },
+          { id: 'c', text: 'Because prices never change after Day 5.', misconception: 'prices-fixed' }
+        ],
+        answer: 'a',
+        hints: ['Can the detectives find any facts about Day 6 on the chart?', 'Is saying "I do not know yet" the same as not trying?'],
+        explanation: 'The detectives gathered every fact the chart had. None of those facts were about Day 6, so the honest conclusion is that there is not enough information to predict it.',
+        teach: '"Not enough information" and "wait" are legitimate answers. They are not laziness; they are honesty about uncertainty.',
+        misconceptions: {
+          'waiting-is-lazy': 'The detectives worked hard to gather facts. Saying "not enough information" is honest, not lazy.',
+          'prices-fixed': 'Prices keep changing. The point is that nobody knows which way.'
+        }
+      })
+    ]
   }
 ];
 

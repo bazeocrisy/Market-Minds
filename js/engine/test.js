@@ -8,13 +8,21 @@ import { recordIndependent } from './record.js';
 
 const LAST_KEYS = new Map();   // `${band}|${scope}` → keys of the previous test (so a retake differs)
 
-/** Skill ids for a scope: lesson id ('w1l1'), 'world-1', 'all', or { skills: [...] }. */
-export function scopeSkills(scope) {
-  if (scope && typeof scope === 'object' && Array.isArray(scope.skills)) return scope.skills.filter((id) => SKILLS[id]);
-  if (!scope || scope === 'all') return SKILL_IDS.slice();
-  const w = /^world-(\d+)$/.exec(scope);
-  if (w) return SKILL_IDS.filter((id) => SKILLS[id].world === Number(w[1]));
-  return SKILL_IDS.filter((id) => SKILLS[id].lesson === scope);
+/**
+ * Skill ids for a scope: lesson id ('w1l1'), 'world-1', 'all', or { skills: [...] }. The mapping comes from the
+ * skills.js `world` / `lesson` fields. Optional `readySkills` (array) intersects the result — the UI passes the
+ * skills whose lessons are ready, so a world test never includes planned lessons. Default behaviour unchanged.
+ */
+export function scopeSkills(scope, readySkills) {
+  let out;
+  if (scope && typeof scope === 'object' && Array.isArray(scope.skills)) out = scope.skills.filter((id) => SKILLS[id]);
+  else if (!scope || scope === 'all') out = SKILL_IDS.slice();
+  else {
+    const w = /^world-(\d+)$/.exec(scope);
+    out = w ? SKILL_IDS.filter((id) => SKILLS[id].world === Number(w[1])) : SKILL_IDS.filter((id) => SKILLS[id].lesson === scope);
+  }
+  if (Array.isArray(readySkills)) { const r = new Set(readySkills); out = out.filter((id) => r.has(id)); }
+  return out;
 }
 
 /** A copy safe to show before submit: no answer, hints, explanation, teach, misconception tags. */
@@ -32,7 +40,7 @@ export function publicQuestion(q) {
 export function createTest(opts = {}, store = null) {
   const band = opts.band === 'analyst' ? 'analyst' : 'explorer';
   const scope = opts.scope ?? 'all';
-  const skills = scopeSkills(scope);
+  const skills = scopeSkills(scope, opts.readySkills);
   if (!skills.length) throw new Error(`No skills for test scope ${JSON.stringify(scope)}`);
   const length = Number.isFinite(opts.length) && opts.length > 0 ? Math.floor(opts.length) : 8;
   const R = makeRng(opts.rng ?? opts.seed);

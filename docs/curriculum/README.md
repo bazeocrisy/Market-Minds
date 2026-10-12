@@ -7,9 +7,9 @@ Market Minds teaches money, markets, futures, math and careful decision-making t
 | World | Title | Status | Lessons | Big idea |
 |---|---|---|---|---|
 | 1 | [Money & Markets](world-1.md) | **Ready** (3 of 3) | w1l1–w1l3 | Buyers and sellers trade in markets; prices change; supply and demand push prices. |
-| 2 | [The Future Price](world-2.md) | **Partial** (1 of 4) | w2l1 ready; w2l2–w2l4 planned | Nobody knows future prices; agreements and futures can reduce price risk, not remove uncertainty. |
+| 2 | [The Future Price](world-2.md) | **Ready** (4 of 4) | w2l1–w2l4 | Nobody knows future prices; agreements and futures can reduce price risk, not remove uncertainty. |
 | 3 | [What People Trade](world-3.md) | Planned | w3l1–w3l5 | Commodities and stock indexes; futures vs. stocks. |
-| 4 | [Reading Markets](world-4.md) | Planned | w4l1–w4l4 | Charts describe the past; long and short; what charts cannot tell you. |
+| 4 | [Reading Markets](world-4.md) | **Ready** (4 of 4) | w4l1–w4l4 | Charts describe the past; long and short; what charts cannot tell you. |
 | 5 | [Market Math](world-5.md) | Planned | w5l1–w5l5 | Decimals, percents, ticks, contract size; leverage magnifies losses too. |
 | 6 | [Decisions & Discipline](world-6.md) | Planned | w6l1–w6l5 | Uncertainty, planning, stop orders and their limits, patience, reflection. |
 
@@ -19,7 +19,7 @@ Planned lessons appear in `js/content/lessons.js` with `status: 'planned'` and n
 
 Every ready lesson has six steps in this order (see the header of `js/content/lessons.js`):
 
-1. **Discover**: a familiar illustrated story (farmers market, grocery store, school-supply sale, bakery)
+1. **Discover**: a familiar illustrated story (farmers market, grocery store, school-supply sale, bakery, career day, corner market, after-school Market Club)
 2. **Definition**: plain-language meaning plus one key idea
 3. **Visual**: an interactive SVG chart or diagram (real UI, not baked into pictures)
 4. **Together**: 2–3 guided mini-questions with a coaching message on every choice

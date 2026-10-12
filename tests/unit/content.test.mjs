@@ -58,8 +58,8 @@ test('lesson ids are unique and lessonById works', () => {
   assert.equal(lessonById('nope'), null);
 });
 
-test('the four v1 lessons are ready; the rest are planned with no steps', () => {
-  assert.deepEqual(ready.map((l) => l.id), ['w1l1', 'w1l2', 'w1l3', 'w2l1']);
+test('batch 1 + batch 2 lessons are ready; the rest are planned with no steps', () => {
+  assert.deepEqual(ready.map((l) => l.id), ['w1l1', 'w1l2', 'w1l3', 'w2l1', 'w2l2', 'w2l3', 'w2l4', 'w4l1', 'w4l2', 'w4l3', 'w4l4']);
   for (const l of LESSONS.filter((x) => x.status !== 'ready')) {
     assert.equal(l.status, 'planned', l.id);
     assert.deepEqual(l.steps, [], l.id);
@@ -201,12 +201,14 @@ test('worlds: six, ordered, statuses match lesson readiness, lessons exist', () 
   assert.deepEqual([...listed].sort(), LESSONS.map((l) => l.id).sort());
 });
 
-test('stories: 4 stories, 3 valid questions each, unique keys', () => {
-  assert.equal(STORIES.length, 4);
+test('stories: 6 stories, 3 valid questions each, unique keys', () => {
+  assert.equal(STORIES.length, 6);
   const keys = new Set();
   for (const s of STORIES) {
     assert.ok(lessonById(s.lesson), `${s.id} lesson`);
-    assert.ok(s.world === 1 || s.world === 2);
+    assert.ok([1, 2, 4].includes(s.world), `${s.id} world`);
+    assert.equal(lessonById(s.lesson).world, s.world, `${s.id} lesson world`);
+    assert.equal(lessonById(s.lesson).status, 'ready', `${s.id} lesson ready`);
     assert.match(s.image.asset, /^assets\/illustrations\/[a-z0-9-]+\.webp$/);
     assert.ok(s.image.alt && s.image.caption);
     for (const [b, paras] of bands(s.text)) assert.ok(Array.isArray(paras) && paras.length, `${s.id} text ${b}`);

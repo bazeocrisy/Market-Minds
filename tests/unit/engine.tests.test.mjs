@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStore } from '../../js/store.js';
-import { createTest, scopeSkills, missQueue, mulberry32 } from '../../js/engine/index.js';
+import { createTest, createPracticeSession, scopeSkills, missQueue, mulberry32 } from '../../js/engine/index.js';
+import { SKILLS, SKILL_IDS } from '../../js/content/skills.js';
 import { _resetTestMemory } from '../../js/engine/test.js';
 
 function memoryStorage() {
@@ -20,11 +21,48 @@ function twin(opts, store) {
 
 test('scope resolution', () => {
   assert.deepEqual(scopeSkills('w1l1'), ['market-basics', 'buyers-sellers']);
-  assert.deepEqual(scopeSkills('world-2'), ['future-agreement', 'hedge-outcome', 'futures-risk']);
+  assert.deepEqual(scopeSkills('world-2'), ['future-agreement', 'hedge-outcome', 'futures-risk', 'futures-standardization', 'hedgers-speculators', 'offset-delivery']);
+  assert.deepEqual(scopeSkills('world-4'), ['line-chart-reading', 'candlestick-reading', 'long-short', 'chart-limits']);
   assert.equal(scopeSkills('world-1').length, 5);
-  assert.equal(scopeSkills('all').length, 8);
+  assert.equal(scopeSkills('all').length, SKILL_IDS.length);
+  const byLesson = { w2l2: 'futures-standardization', w2l3: 'hedgers-speculators', w2l4: 'offset-delivery', w4l1: 'line-chart-reading', w4l2: 'candlestick-reading', w4l3: 'long-short', w4l4: 'chart-limits' };
+  for (const [lesson, skill] of Object.entries(byLesson)) assert.deepEqual(scopeSkills(lesson), [skill], lesson);
+  // the mapping comes from the skills.js `lesson` / `world` fields
+  for (const id of SKILL_IDS) {
+    assert.ok(scopeSkills(SKILLS[id].lesson).includes(id));
+    assert.ok(scopeSkills(`world-${SKILLS[id].world}`).includes(id));
+  }
   assert.deepEqual(scopeSkills({ skills: ['supply-demand', 'bogus'] }), ['supply-demand']);
   assert.throws(() => createTest({ scope: 'nope' }));
+});
+
+test('readySkills intersects the scope (default unchanged)', () => {
+  const ready = ['market-basics', 'buyers-sellers', 'future-agreement', 'hedge-outcome', 'futures-risk', 'futures-standardization'];
+  assert.deepEqual(scopeSkills('world-2', ready), ['future-agreement', 'hedge-outcome', 'futures-risk', 'futures-standardization']);
+  assert.deepEqual(scopeSkills('world-4', ready), []);
+  assert.deepEqual(scopeSkills('all', ready), ready);
+  assert.deepEqual(scopeSkills('world-2', undefined), scopeSkills('world-2'));
+  _resetTestMemory();
+  const t = createTest({ band: 'explorer', scope: 'world-2', length: 12, readySkills: ready, rng: mulberry32(3) }, null);
+  assert.deepEqual([...new Set(t.items.map((it) => it.skill))].sort(), ['future-agreement', 'futures-risk', 'futures-standardization', 'hedge-outcome']);
+  assert.throws(() => createTest({ scope: 'world-4', readySkills: ready }), /No skills/);
+  // practice sessions honour readySkills too
+  const s = createPracticeSession({ band: 'analyst', mode: 'world', readySkills: ['long-short', 'chart-limits'], length: 10, rng: mulberry32(4) }, null);
+  const seen = new Set();
+  for (let i = 0; i < 10 && s.current; i++) { seen.add(s.current.question.skill); s.reveal(); s.next(); }
+  assert.ok(seen.size && [...seen].every((id) => ['long-short', 'chart-limits'].includes(id)), [...seen].join());
+  const s2 = createPracticeSession({ band: 'explorer', skills: ['supply-demand', 'long-short'], readySkills: ['long-short'], rng: mulberry32(5) }, null);
+  assert.equal(s2.current.question.skill, 'long-short');
+});
+
+test('world-2, world-4 and the new lesson scopes build complete tests for both bands', () => {
+  for (const scope of ['world-2', 'world-4', 'w2l2', 'w2l3', 'w2l4', 'w4l1', 'w4l2', 'w4l3', 'w4l4']) for (const band of ['explorer', 'analyst']) {
+    _resetTestMemory();
+    const t = createTest({ band, scope, length: 8, rng: mulberry32(scope.length * 7 + band.length) }, null);
+    assert.equal(t.items.length, 8);
+    assert.equal(new Set(t.keys).size, 8, `${scope}/${band} repeats`);
+    assert.equal(t.submit().total, 8);
+  }
 });
 
 test('no hints, explanations or answers exposed before submit; balanced and mixed', () => {

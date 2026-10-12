@@ -13,6 +13,7 @@ import {
   roundCents, priceChange, percentChange, classifyMove, plSteps, positionPL, marginVsLoss,
   isValidStop, simulateStop
 } from '../lab/sim.js';
+import { chartSpec, longShortRows } from '../lab/chart.js';
 
 const ACTIVITIES = [
   { id: 'watch', label: 'Price Watch', grades: 'Grades 3–5' },
@@ -54,8 +55,51 @@ function radioGroup({ legend, name, options, value, onChange, hint }) {
   return fs;
 }
 
-function chart(title, points, highlight) {
-  return h('div', { class: 'visual lab-chart' }, renderVisual({ kind: 'line', title, unit: '$', points, highlight }));
+// Chart picture choice (Line / Candles). Remembered for this page visit only; it never changes any number.
+const CHART_OPTIONS = [{ id: 'line', label: 'Line' }, { id: 'candles', label: 'Candles' }];
+let chartMode = 'line';
+
+/** Chart for the days revealed so far + an accessible Line/Candles radio toggle that redraws in place. */
+function chartBlock(sc, dayCount) {
+  const holder = h('div', { class: 'visual lab-chart' });
+  const paint = () => {
+    holder.textContent = '';
+    const spec = chartSpec(sc, dayCount, chartMode);
+    if (spec) holder.append(renderVisual(spec));
+    else holder.append(h('p', { class: 'small muted lab-chart-empty' }, `No candles yet. A candle shows one whole day (open, high, low, close), so the first one appears after ${sc.days[0].label}. Start price: ${money(sc.start)}.`));
+    if (chartMode === 'candles' && spec) holder.append(h('p', { class: 'small muted' }, 'Open, high and low are pretend too. Every change and profit-or-loss number uses the close.'));
+  };
+  const toggle = radioGroup({
+    legend: 'Chart', name: uid('lab-chart-mode'), options: CHART_OPTIONS, value: chartMode,
+    onChange: (v) => { chartMode = v; paint(); }
+  });
+  toggle.classList.add('lab-chart-toggle');
+  paint();
+  return h('div', { class: 'lab-chart-block' }, toggle, holder);
+}
+
+/** "Long or Short?" — what the latest day's change means per unit and per practice contract for each side. */
+function longShortPanel(sc, oldPrice, newPrice, dayLabel) {
+  const rows = longShortRows(oldPrice, newPrice, sc.quantity);
+  const change = rows[0].change;
+  const word = (v) => (v > 0 ? 'gain' : v < 0 ? 'loss' : 'even');
+  const capId = uid('lab-ls');
+  return h('section', { class: 'lab-longshort', 'aria-labelledby': capId },
+    h('h4', { id: capId }, 'Long or Short?'),
+    h('p', { class: 'small' }, `${dayLabel}: the price changed ${signed(change)} (${money(oldPrice)} → ${money(newPrice)}). Long gains when the price rises; short gains when it falls — always opposite.`),
+    h('div', { class: 'table-wrap' }, h('table', {},
+      h('caption', { class: 'sr-only' }, `Long versus short for ${dayLabel}`),
+      h('thead', {}, h('tr', {}, ['Side', 'Per unit', `One contract (× ${sc.quantity})`].map((c) => h('th', { scope: 'col' }, c)))),
+      h('tbody', {}, rows.map((r) => h('tr', {},
+        h('th', { scope: 'row' }, r.side === 'long' ? 'Long (bought)' : 'Short (sold)'),
+        h('td', {}, `${signed(r.perUnit)} (${word(r.perUnit)})`),
+        h('td', {}, `${signed(r.total)} (${word(r.total)})`)))))));
+}
+
+function reflectionNote(sc, band) {
+  if (!sc.reflection) return null;
+  return h('div', { class: 'notice notice-info lab-pattern-note' },
+    h('p', {}, h('strong', {}, sc.patternTrap ? 'Pattern Trap. ' : 'Think about it. '), pick(sc.reflection, band)));
 }
 
 function newsCard(day, band, { heading = 'News card' } = {}) {
@@ -165,17 +209,12 @@ function priceWatch(root, sc, ctx) {
   root.append(body);
   draw();
 
-  function points() {
-    const pts = [{ label: 'Start', value: sc.start }];
-    for (let i = 0; i < st.day; i++) pts.push({ label: sc.days[i].label.replace('Day ', 'D'), value: sc.days[i].price });
-    return pts;
-  }
   function priceAt(i) { return i === 0 ? sc.start : sc.days[i - 1].price; }
 
   // draw({ focus }) — focus moves to the new step's heading after a button press (not on first render).
   function draw({ focus = false } = {}) {
     body.textContent = '';
-    body.append(chart(`${sc.item} — pretend price`, points(), st.day));
+    body.append(chartBlock(sc, st.day));
     if (!st.revealed && st.day >= sc.days.length) { summary(focus); return; }
 
     if (!st.revealed) {
@@ -259,6 +298,7 @@ function priceWatch(root, sc, ctx) {
       h('ul', { class: 'lab-summary' }, items.map((t) => h('li', {}, t))),
       h('p', {}, `Over the whole time, the pretend price went from ${money(sc.start)} to ${money(sc.days[sc.days.length - 1].price)} (${signed(total)}).`),
       h('div', { class: 'key-idea' }, h('span', { class: 'label' }, 'Big idea'), h('p', {}, pick(sc.takeaway, band))),
+      reflectionNote(sc, band),
       h('div', { class: 'field' }, h('label', { for: reflId }, 'What did you learn? (optional)'),
         h('span', { class: 'field-hint' }, 'Please don’t write your name.'), refl),
       journalBlock(ctx, () => ({
@@ -313,16 +353,11 @@ function paperPractice(root, sc, ctx) {
   draw();
 
   function priceAt(i) { return i === 0 ? sc.start : sc.days[i - 1].price; }
-  function points() {
-    const pts = [{ label: 'Start', value: sc.start }];
-    for (let i = 0; i < st.day; i++) pts.push({ label: sc.days[i].label.replace('Day ', 'D'), value: sc.days[i].price });
-    return pts;
-  }
 
   function draw() {
     body.textContent = '';
     if (st.phase === 'setup') return setup();
-    body.append(chart(`${sc.item} — pretend price`, points(), st.day));
+    body.append(chartBlock(sc, st.day));
     if (st.phase === 'running') return running();
     return done();
   }
@@ -389,6 +424,7 @@ function paperPractice(root, sc, ctx) {
     if (st.day > 0) {
       body.append(dayDetails(st.day));
       if (has) body.append(plBlock(sc.start, priceAt(st.day), 'Pretend profit or loss so far (if you got out now)'));
+      body.append(longShortPanel(sc, priceAt(st.day - 1), priceAt(st.day), sc.days[st.day - 1].label));
     }
     if (st.day < sc.days.length) {
       body.append(newsCard(sc.days[st.day], band, { heading: 'Next news' }));
@@ -471,6 +507,8 @@ function paperPractice(root, sc, ctx) {
       const op = positionPL({ entry: sc.start, exit: st.exit, quantity: sc.quantity, side: other });
       body.append(h('p', { class: 'small' }, `The other side, ${SIDE_LABEL[other]}, would have been ${signed(op)} at the same exit. Gains and losses are both always possible.`));
     }
+    const note = reflectionNote(sc, band);
+    if (note) body.append(note);
     reflection();
     head.focus();
   }

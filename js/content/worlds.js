@@ -14,7 +14,7 @@ export const WORLDS = [
     lessons: ['w1l1', 'w1l2', 'w1l3']
   },
   {
-    id: 'world-2', number: 2, title: 'The Future Price', status: 'partial',
+    id: 'world-2', number: 2, title: 'The Future Price', status: 'ready',
     tagline: { explorer: 'Planning ahead for prices nobody knows yet.', analyst: 'Price risk, forward agreements, futures and hedging.' },
     summary: {
       explorer: 'Meet a farmer and a baker who both worry about the price of wheat, and see how a promise about a future price can help, or not.',
@@ -32,7 +32,7 @@ export const WORLDS = [
     lessons: ['w3l1', 'w3l2', 'w3l3', 'w3l4', 'w3l5']
   },
   {
-    id: 'world-4', number: 4, title: 'Reading Markets', status: 'planned',
+    id: 'world-4', number: 4, title: 'Reading Markets', status: 'ready',
     tagline: { explorer: 'Charts tell a story about the past.', analyst: 'Line charts, candlesticks, long and short.' },
     summary: {
       explorer: 'Learn to read price charts and candlesticks, and remember that charts show what happened, not what will happen.',

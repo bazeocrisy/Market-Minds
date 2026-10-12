@@ -38,7 +38,9 @@ function renderWorlds(page, ctx) {
 
   for (const w of WORLDS) {
     const lessons = lessonsInWorld(w);
-    const statusChip = w.status === 'ready' ? chip('Ready', 'ready') : w.status === 'partial' ? chip('Some lessons ready', 'progress') : chip('In development', 'planned');
+    // Derived from the lessons themselves (not a hand-set world flag).
+    const nReady = lessons.filter((l) => l.status === 'ready' && l.id).length;
+    const statusChip = nReady && nReady === lessons.length ? chip('Ready', 'ready') : nReady ? chip(`${nReady} of ${lessons.length} lessons ready`, 'progress') : chip('In development', 'planned');
     const sec = h('section', { class: 'world', 'aria-labelledby': `world-${w.id}` },
       h('div', { class: 'world-head' }, h('h2', { id: `world-${w.id}` }, worldTitle(w)), statusChip),
       w.tagline ? h('p', { class: 'muted', style: 'margin-bottom:4px' }, pick(w.tagline, ctx.band)) : null,

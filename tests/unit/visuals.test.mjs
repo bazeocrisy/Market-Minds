@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   formatMoney, formatNumber, formatValue, isMoneyUnit, extent, linearScale, niceStep, niceTicks,
-  labelStride, supplyDemandPressure, describeLine, describeBars, describeCandles, candleDirection
+  labelStride, supplyDemandPressure, describeLine, describeBars, describeCandles, candleDirection, stepCounts
 } from '../../js/ui/visuals.js';
 import { THINKING_PROMPTS, THINKING_TYPES, promptById } from '../../js/content/thinking.js';
 import { SKILLS } from '../../js/content/skills.js';
@@ -83,7 +83,7 @@ test('thinking prompts: ids unique, schema complete, both bands', () => {
   const ids = new Set();
   for (const p of THINKING_PROMPTS) {
     assert.ok(!ids.has(p.id), `duplicate ${p.id}`); ids.add(p.id);
-    assert.ok([1, 2].includes(p.world), p.id);
+    assert.ok([1, 2, 4].includes(p.world), p.id);
     assert.ok(SKILLS[p.skill], `${p.id} skill ${p.skill}`);
     assert.equal(SKILLS[p.skill].lesson, p.lesson, `${p.id} lesson matches skill`);
     assert.ok(THINKING_TYPES[p.type], `${p.id} type`);
@@ -129,4 +129,46 @@ test('thinking prompts: every [[term]] tap-a-word markup resolves in the glossar
   const ids = [...text.matchAll(/\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/g)].map((m) => m[1].trim());
   assert.ok(ids.length > 0);
   for (const id of ids) assert.ok(termById(id), `unknown glossary term ${id}`);
+});
+
+test('chart accessible names include the date range and the up/down count', () => {
+  const line = describeLine({ title: 'P', unit: '$', points: [{ label: 'Start', value: 2 }, { label: 'D1', value: 2.5 }, { label: 'D2', value: 2.5 }, { label: 'D3', value: 2.1 }] });
+  assert.ok(line.includes("from Start ($2.00) to D3 ($2.10)"), line);
+  assert.match(line, /1 rise, 1 fall, 1 no change/);
+  const c = describeCandles({ title: 'C', unit: '$', candles: [{ label: 'D1', open: 1, high: 2, low: 0.5, close: 1.5 }, { label: 'D2', open: 1.5, high: 1.6, low: 1, close: 1.1 }, { label: 'D3', open: 1.1, high: 1.2, low: 1, close: 1.1 }] });
+  assert.match(c, /3 candles from D1 to D3: 1 up, 1 down, 1 flat/);
+  assert.ok(c.includes("Highest $2.00, lowest $0.50"), c);
+  assert.match(describeCandles({ candles: [{ label: 'D1', open: 1, high: 1, low: 1, close: 1 }] }), /1 candle for D1/);
+  assert.deepEqual(stepCounts([1, 2, 2, 1, 3]), { ups: 2, downs: 1, flats: 1 });
+});
+
+// ------------------------------------------------------------ batch 2 prompts (w2l2–w2l4, w4l1–w4l4)
+
+const BATCH2 = ['tl-w2-handshake-vs-exchange', 'tl-w2-mistake-priya-trust', 'tl-w2-missing-handshake', 'tl-w2-hedger-or-speculator',
+  'tl-w2-mistake-dev-hedge', 'tl-w2-speculator-risk', 'tl-w2-close-out', 'tl-w2-mistake-kai-offset', 'tl-w4-read-line',
+  'tl-w4-missing-why-line', 'tl-w4-read-candle', 'tl-w4-mistake-ana-candle', 'tl-w4-long-short-who', 'tl-w4-mistake-rio-short',
+  'tl-w4-streak-next', 'tl-w4-missing-chart-news'];
+
+test('batch 2 thinking prompts: coverage of every new lesson, detectives, missing info, chart visuals', () => {
+  const ps = BATCH2.map((id) => promptById(id));
+  ps.forEach((p, i) => assert.ok(p, `missing prompt ${BATCH2[i]}`));
+  assert.ok(ps.length >= 12);
+  for (const l of ['w2l2', 'w2l3', 'w2l4', 'w4l1', 'w4l2', 'w4l3', 'w4l4']) assert.ok(ps.some((p) => p.lesson === l), `no prompt for ${l}`);
+  assert.ok(ps.filter((p) => p.type === 'mistake-detective').length >= 4);
+  assert.ok(ps.filter((p) => p.type === 'missing-info').length >= 2);
+  assert.ok(ps.some((p) => p.visual?.kind === 'line') && ps.some((p) => p.visual?.kind === 'candles'));
+  for (const p of ps) {
+    if (p.visual?.kind === 'candles') for (const c of p.visual.candles) {
+      assert.ok(c.high >= Math.max(c.open, c.close) && c.low <= Math.min(c.open, c.close), `${p.id} candle ${c.label}`);
+    }
+  }
+});
+
+test('thinking prompts never promise a price move or reward profit', () => {
+  const text = JSON.stringify(THINKING_PROMPTS).toLowerCase();
+  for (const bad of ['guaranteed profit', 'can’t lose money', 'easy money', 'get rich']) assert.ok(!text.includes(bad), bad);
+  // Correct answers about the next price must be the uncertain one.
+  const streak = promptById('tl-w4-streak-next');
+  const right = streak.choices.find((c) => c.correct);
+  assert.match(JSON.stringify(right.text), /can’t be sure|Nobody can know/);
 });

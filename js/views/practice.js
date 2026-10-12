@@ -2,6 +2,7 @@
 // Practice is coached: hints, retries, "Show me how", "Show answer". It never auto-advances after an error.
 // Credit rules belong to the engine; this view only shows a running tally that mirrors them.
 import { h, pageHead, notice, chip, linkBtn, btn, plural, skillName, worldTitle, worldOf, lessonsInWorld, readyLessons, readySkillIds, statBox, closeAllModals } from '../ui/dom.js';
+import { pick } from '../content/band.js';
 import { renderQuestion } from '../ui/question.js';
 import { stopAll } from '../ui/speech.js';
 import { WORLDS } from '../content/worlds.js';
@@ -33,7 +34,7 @@ export function render(el, params, ctx) {
 
 /** Start a session and go to it. Shared with the lesson warm-up and the test results page. */
 export function startPractice(ctx, { skills, difficulty = 'adaptive', mode = 'practice', title }) {
-  const opts = { band: ctx.band, skills, difficulty, mode };
+  const opts = { band: ctx.band, skills, difficulty, mode, readySkills: readySkillIds() };
   const session = createPracticeSession(opts, ctx.store);
   active = { session, opts, title: title || MODE_LABEL[mode] || 'Practice' };
   ctx.go('#/practice/session');
@@ -94,14 +95,16 @@ function renderChooser(page, ctx) {
   const worldSel = h('select', { id: 'pr-world' }, worlds.map((w) => h('option', { value: w.id }, worldTitle(w))));
   const lessonSel = h('select', { id: 'pr-lesson' });
   const skillSel = h('select', { id: 'pr-skill' });
-  const startWorld = preLesson ? worldOf(preLesson) : worlds[0];
+  // Default world: the deep-linked lesson's, else the world the learner is currently in.
+  const curLesson = state.current && lessonById(state.current.lessonId);
+  const startWorld = (preLesson && worldOf(preLesson)) || (curLesson?.status === 'ready' && worlds.find((w) => w === worldOf(curLesson))) || worlds[0];
   if (startWorld) worldSel.value = startWorld.id;
 
   const fillLessons = (keep) => {
     const w = worlds.find((x) => x.id === worldSel.value) || worlds[0];
     const ls = lessonsInWorld(w).filter((l) => l.status === 'ready');
     lessonSel.replaceChildren(h('option', { value: '' }, 'All ready lessons in this world'),
-      ...ls.map((l) => h('option', { value: l.id }, `Lesson ${l.number ?? ''}: ${l.title}`)));
+      ...ls.map((l) => h('option', { value: l.id }, `Lesson ${l.number ?? ''}: ${pick(l.title, ctx.band)}`)));
     if (keep && ls.some((l) => l.id === keep)) lessonSel.value = keep;
   };
   const skillsForSelection = () => {
@@ -140,7 +143,7 @@ function renderChooser(page, ctx) {
     if (!skills.length) { msg.replaceChildren(notice('There are no ready skills to practice here yet. Choose another lesson.', 'warn')); return; }
     const difficulty = form.querySelector('input[name="pr-diff"]:checked')?.value || 'adaptive';
     const lesson = lessonSel.value ? lessonById(lessonSel.value) : null;
-    const title = skillSel.value ? skillName(skillSel.value) : lesson ? lesson.title : 'Practice';
+    const title = skillSel.value ? skillName(skillSel.value) : lesson ? pick(lesson.title, ctx.band) : 'Practice';
     startPractice(ctx, { skills, difficulty, mode: 'practice', title });
   });
   page.append(form);

@@ -2,19 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#102541">
-  <meta name="description" content="Market Minds helps students in grades 3–8 understand money, markets, futures, and wise decisions. Free, pretend prices, no accounts.">
-  <title>Market Minds | Learn Money. Understand Markets. Think Bigger.</title>
+  <meta name="description" content="Market Minds: a learning app for grades 3–8 about money, markets, futures and wise decisions. Pretend prices, no accounts.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Market Minds">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Market Minds</title>
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <!-- The skip link is handled in js/ui/dom.js (it focuses <main> without changing the hash route). -->
   <a class="skip" href="#view">Skip to content</a>
 
-  <header class="site-header">
-    <div class="header-inner">
+  <header class="app-bar">
+    <div class="app-bar-inner">
       <a class="brand" href="#/">
         <img class="brand-mark" src="./assets/logo.svg" alt="" width="40" height="40">
         <span class="brand-word">MARKET <strong>MINDS</strong></span>
@@ -25,33 +31,47 @@
         <button type="button" class="band-btn" data-band="analyst" aria-pressed="false"><span class="band-long">Grades </span>6–8</button>
       </div>
 
+      <!-- "More" sheet. app.js toggles aria-expanded and .open on #siteNav; js/ui/dom.js moves focus in and closes it on an outside click. -->
       <button type="button" class="menu-toggle" id="menuToggle" aria-controls="siteNav" aria-expanded="false">
-        <span class="menu-icon" aria-hidden="true"></span>
-        <span class="menu-text">Menu</span>
+        <svg class="menu-dots" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        <span class="menu-text">More</span>
       </button>
-    </div>
-
-    <nav class="site-nav" id="siteNav" aria-label="Main">
-      <div class="nav-inner">
-        <ul class="nav-primary">
-          <li><a href="#/" data-nav="">Dashboard</a></li>
-          <li><a href="#/learn" data-nav="learn">Learn</a></li>
-          <li><a href="#/practice" data-nav="practice">Practice</a></li>
-          <li><a href="#/thinking" data-nav="thinking">Thinking Lab</a></li>
-          <li><a href="#/market-lab" data-nav="market-lab">Market Lab</a></li>
-          <li><a href="#/test" data-nav="test">Test</a></li>
-          <li><a href="#/progress" data-nav="progress">My Progress</a></li>
-        </ul>
-        <div class="nav-more">
-          <span class="nav-label" id="moreLabel">More</span>
-          <ul aria-labelledby="moreLabel">
+      <div class="more-sheet" id="siteNav">
+        <nav aria-label="More">
+          <p class="nav-label more-labs" id="labsLabel">Labs</p>
+          <ul class="more-links more-labs" aria-labelledby="labsLabel">
+            <li><a href="#/thinking" data-nav="thinking">Thinking Lab</a></li>
+            <li><a href="#/market-lab" data-nav="market-lab">Market Lab</a></li>
+          </ul>
+          <p class="nav-label" id="moreLabel">More</p>
+          <ul class="more-links" aria-labelledby="moreLabel">
             <li><a href="#/dictionary" data-nav="dictionary">Dictionary</a></li>
             <li><a href="#/stories" data-nav="stories">Stories</a></li>
             <li><a href="#/journal" data-nav="journal">Decision Journal</a></li>
+            <li><a href="#/certificates" data-nav="certificates">Certificates</a></li>
             <li><a href="#/parent" data-nav="parent">Parent &amp; Teacher</a></li>
           </ul>
-        </div>
+        </nav>
+        <section class="about-safety" aria-labelledby="aboutTitle">
+          <h2 id="aboutTitle">About &amp; safety</h2>
+          <p>Market Minds is for learning only. Every price is pretend; nothing here is real trading or advice.</p>
+          <p>Futures involve substantial risk, including losses larger than the margin deposit, and are not suitable for children to trade.</p>
+          <p>No accounts and no names. Progress is saved only on this device.</p>
+        </section>
       </div>
+    </div>
+
+    <!-- Main app navigation: a top nav on tablets/desktops, a fixed bottom tab bar on phones. -->
+    <nav class="app-tabs" aria-label="Main">
+      <ul>
+        <li><a href="#/" data-nav=""><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a></li>
+        <li><a href="#/learn" data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/></svg><span>Learn</span></a></li>
+        <li><a href="#/practice" data-nav="practice"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg><span>Practice</span></a></li>
+        <li class="tab-wide"><a href="#/thinking" data-nav="thinking"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/></svg><span>Thinking Lab</span></a></li>
+        <li class="tab-wide"><a href="#/market-lab" data-nav="market-lab"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/></svg><span>Market Lab</span></a></li>
+        <li><a href="#/test" data-nav="test"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Test</span></a></li>
+        <li><a href="#/progress" data-nav="progress"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 20V10M12 20V4M18 20v-7"/></svg><span>Progress</span></a></li>
+      </ul>
     </nav>
   </header>
 
@@ -59,18 +79,10 @@
     <noscript>
       <section class="page">
         <h1>Market Minds needs JavaScript</h1>
-        <p>Lessons, practice and progress run in your browser. Please turn on JavaScript, or open this page in a different browser.</p>
+        <p>Lessons, practice and progress run in your browser. Please turn on JavaScript, or open Market Minds in a different browser.</p>
       </section>
     </noscript>
   </main>
-
-  <footer class="site-footer">
-    <div class="footer-inner">
-      <p class="footer-brand"><strong>Market Minds</strong> · Learn Money. Understand Markets. Think Bigger.</p>
-      <p class="footer-risk">Educational only. Pretend prices. Futures involve substantial risk, including losses larger than the margin deposit, and are not suitable for children to trade.</p>
-      <p class="footer-privacy">No accounts, no names. Progress is saved only on this device.</p>
-    </div>
-  </footer>
 
   <script type="module" src="./js/app.js"></script>
 </body>

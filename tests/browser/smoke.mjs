@@ -10,7 +10,8 @@ const check = (n, ok, d = '') => { if (ok) pass++; else { fail++; console.log('F
 const q = (e) => b.js(`return ${e};`);
 const ROUTES = ['#/', '#/learn', '#/learn/w1l1/1', '#/learn/w1l1/2', '#/learn/w1l1/3', '#/learn/w1l1/4', '#/learn/w1l1/5', '#/learn/w1l1/6',
   '#/learn/w1l2/3', '#/learn/w1l3/3', '#/learn/w2l1/1', '#/learn/w2l1/3', '#/learn/w2l1/5', '#/practice', '#/thinking', '#/thinking/' , '#/market-lab', '#/market-lab?activity=paper',
-  '#/test', '#/test/w1l1', '#/test/world-1', '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent', '#/learn/nope', '#/bogus'];
+  '#/test', '#/test/w1l1', '#/test/world-1', '#/progress', '#/dictionary', '#/stories', '#/journal', '#/parent', '#/learn/nope', '#/bogus',
+  '#/welcome', '#/certificates', '#/learn/w2l2/1', '#/learn/w2l3/3', '#/learn/w2l4/5', '#/learn/w4l1/3', '#/learn/w4l2/3', '#/learn/w4l2/5', '#/learn/w4l3/4', '#/learn/w4l4/5', '#/test/world-2', '#/test/world-4', '#/test/w4l2', '#/market-lab?activity=paper&scenario=pretend-rice-pattern-trap'];
 try {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     await b.viewport(w, h);

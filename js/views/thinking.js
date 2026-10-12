@@ -4,12 +4,14 @@
 // Nothing personal is stored: only the choice id, the learner's own words, self-check ticks and a time.
 import { THINKING_PROMPTS, THINKING_TYPES, promptById } from '../content/thinking.js';
 import { SKILLS } from '../content/skills.js';
+import { worldById } from '../content/worlds.js';
 import { pick } from '../content/band.js';
 import { renderVisual } from '../ui/visuals.js';
 import { renderRichText } from '../ui/vocab.js';
 import { readToMe, stopAll } from '../ui/speech.js';
 
-const WORLD_NAMES = { 1: 'World 1: Money & Markets', 2: 'World 2: The Future Price' };
+// World headings come from js/content/worlds.js, so new worlds appear without editing this view.
+const worldName = (num) => { const w = worldById(num); return w ? `World ${num}: ${w.title}` : `World ${num}`; };
 const MAX_RESPONSE = 2000;
 // Unsaved drafts survive a re-render (e.g. switching grade band) for this page visit only. Memory only.
 const drafts = new Map();
@@ -60,12 +62,12 @@ function renderList(el, ctx) {
       h('p', {}, 'Some prompts have one best answer and some have many good answers. Your written explanations are never graded by the app — you compare them with an example answer and check your own work honestly.')),
     h('p', { class: 'thinking-count' }, `${count} of ${THINKING_PROMPTS.length} prompts saved`));
 
-  for (const world of [1, 2]) {
+  for (const world of [...new Set(THINKING_PROMPTS.map((p) => p.world))].sort((a, b) => a - b)) {
     const list = THINKING_PROMPTS.filter((p) => p.world === world);
     if (!list.length) continue;
     const headId = uid('tl-world');
     page.append(h('section', { class: 'section', 'aria-labelledby': headId },
-      h('h2', { id: headId }, WORLD_NAMES[world]),
+      h('h2', { id: headId }, worldName(world)),
       h('ul', { class: 'entry-list thinking-list' }, list.map((p) => {
         const isDone = !!done[p.id];
         return h('li', {},
@@ -209,7 +211,7 @@ function renderPrompt(el, p, ctx) {
   el.append(h('article', { class: 'page page-narrow thinking-prompt' },
     h('p', {}, h('a', { href: '#/thinking', class: 'text-link' }, '← Thinking Lab')),
     h('header', { class: 'page-head' },
-      h('p', { class: 'eyebrow' }, `${THINKING_TYPES[p.type]} · ${WORLD_NAMES[p.world]}`),
+      h('p', { class: 'eyebrow' }, `${THINKING_TYPES[p.type]} · ${worldName(p.world)}`),
       h('h1', { tabindex: '-1' }, p.title),
       p.type === 'mistake-detective' ? h('p', { class: 'lead' }, 'A pretend student made a mistake. Can you find it and explain it?') : null),
     scenarioSec, choiceSec, explainSec,

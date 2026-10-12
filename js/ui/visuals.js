@@ -112,8 +112,21 @@ export function describeLine(spec) {
   const [lo, hi] = extent(pts.map((p) => p.value));
   const diff = last.value - first.value;
   const trend = Math.abs(diff) < 1e-9 ? 'ended where it started' : diff > 0 ? `went up by ${formatValue(Math.abs(diff), spec.unit)} overall` : `went down by ${formatValue(Math.abs(diff), spec.unit)} overall`;
-  return `${spec.title || 'Line chart'}. ${pts.length} points from ${first.label} (${formatValue(first.value, spec.unit)}) to ${last.label} (${formatValue(last.value, spec.unit)}). It ${trend}. Lowest ${formatValue(lo, spec.unit)}, highest ${formatValue(hi, spec.unit)}.`;
+  const { ups, downs, flats } = stepCounts(pts.map((p) => p.value));
+  const moves = pts.length > 1 ? ` Step by step: ${countWord(ups, 'rise', 'rises')}, ${countWord(downs, 'fall', 'falls')}${flats ? `, ${countWord(flats, 'no change', 'no changes')}` : ''}.` : '';
+  return `${spec.title || 'Line chart'}. ${pts.length} ${pts.length === 1 ? 'point' : 'points'} from ${first.label} (${formatValue(first.value, spec.unit)}) to ${last.label} (${formatValue(last.value, spec.unit)}). It ${trend}.${moves} Lowest ${formatValue(lo, spec.unit)}, highest ${formatValue(hi, spec.unit)}.`;
 }
+
+/** How many point-to-point moves went up, down, or stayed the same. */
+export function stepCounts(values) {
+  let ups = 0, downs = 0, flats = 0;
+  for (let i = 1; i < values.length; i++) {
+    const d = values[i] - values[i - 1];
+    if (Math.abs(d) < 1e-9) flats++; else if (d > 0) ups++; else downs++;
+  }
+  return { ups, downs, flats };
+}
+function countWord(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
 
 export function describeBars(spec) {
   const items = spec.items || [];
@@ -132,7 +145,9 @@ export function describeCandles(spec) {
   const ups = cs.filter((c) => candleDirection(c) === 'up').length;
   const downs = cs.filter((c) => candleDirection(c) === 'down').length;
   const first = cs[0], last = cs[cs.length - 1];
-  return `${spec.title || 'Candlestick chart'}. ${cs.length} candles: ${ups} up, ${downs} down. First open ${formatValue(first.open, spec.unit)}, last close ${formatValue(last.close, spec.unit)}.`;
+  const flats = cs.length - ups - downs;
+  const range = cs.length === 1 ? `for ${first.label}` : `from ${first.label} to ${last.label}`;
+  return `${spec.title || 'Candlestick chart'}. ${cs.length} ${cs.length === 1 ? 'candle' : 'candles'} ${range}: ${ups} up, ${downs} down${flats ? `, ${flats} flat` : ''}. First open ${formatValue(first.open, spec.unit)}, last close ${formatValue(last.close, spec.unit)}. Highest ${formatValue(Math.max(...cs.map((c) => c.high)), spec.unit)}, lowest ${formatValue(Math.min(...cs.map((c) => c.low)), spec.unit)}.`;
 }
 
 // ---------------------------------------------------------------- DOM helpers (local)

@@ -1,6 +1,6 @@
 // Test — chooser (#/test) and a test for a lesson or world (#/test/<scope>).
 // No hints and no correctness feedback until the learner submits. Results are recorded by the engine.
-import { h, pageHead, notice, linkBtn, btn, plural, skillName, worldTitle, lessonsInWorld, readyLessons, formatDate, statBox, confirmDialog, closeAllModals } from '../ui/dom.js';
+import { h, pageHead, notice, linkBtn, btn, plural, skillName, worldTitle, lessonsInWorld, readyLessons, formatDate, statBox, confirmDialog, closeAllModals, readySkillIds } from '../ui/dom.js';
 import { renderQuestion, formatAnswer } from '../ui/question.js';
 import { renderRichText } from '../ui/vocab.js';
 import { stopAll } from '../ui/speech.js';
@@ -99,7 +99,7 @@ function renderIntro(page, info, ctx) {
 function start(info, ctx) {
   const scope = info.kind === 'lesson' ? info.lesson.id : info.world.id;
   let test;
-  try { test = createTest({ band: ctx.band, scope, length: info.length }, ctx.store); } catch (e) { console.error(e); return; }
+  try { test = createTest({ band: ctx.band, scope, length: info.length, readySkills: readySkillIds() }, ctx.store); } catch (e) { console.error(e); return; }
   running = { scope, test, answers: new Array(test.items.length).fill(null), index: 0, results: null };
   flag.set(scope);
   ctx.go(location.hash); // re-render this route (now showing item 1)
@@ -122,7 +122,7 @@ function renderItem(page, info, ctx) {
   });
   const go = (i) => { r.index = i; ctx.go(location.hash); };
   const nav = h('div', { class: 'lesson-nav' },
-    r.index > 0 ? btn('← Back', () => go(r.index - 1), 'btn') : h('span'),
+    r.index > 0 ? btn('← Back', () => go(r.index - 1), 'btn') : null,
     r.index < n - 1 ? btn('Next →', () => go(r.index + 1), 'btn btn-primary') : null);
   const submit = btn('Submit test', async () => {
     const left = n - answered();

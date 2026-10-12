@@ -229,4 +229,25 @@ if (typeof document !== 'undefined' && !globalThis.__mmSkipBound) {
     const target = main?.querySelector('h1') || main;
     if (target) { if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1'); target.focus(); }
   });
+
+  // ---------- "More" sheet (#menuToggle controls #siteNav; app.js toggles it and handles Esc) ----------
+  // Here: move focus into the sheet when it opens, and close it on a click or focus outside it.
+  const toggle = () => document.getElementById('menuToggle');
+  const sheet = () => document.getElementById('siteNav');
+  const isOpen = () => toggle()?.getAttribute('aria-expanded') === 'true';
+  const closeSheet = () => { toggle()?.setAttribute('aria-expanded', 'false'); sheet()?.classList.remove('open'); };
+  document.addEventListener('click', (e) => {
+    const t = toggle(), s = sheet();
+    if (!t || !s) return;
+    if (t.contains(e.target)) {
+      // app.js's listener on the button itself has already toggled it (it runs before this document listener).
+      if (isOpen()) s.querySelector('a[href]')?.focus();
+      return;
+    }
+    if (isOpen() && (!s.contains(e.target) || e.target.closest?.('a[href]'))) closeSheet();
+  });
+  document.addEventListener('focusin', (e) => {
+    const t = toggle(), s = sheet();
+    if (isOpen() && t && s && !t.contains(e.target) && !s.contains(e.target)) closeSheet();
+  });
 }

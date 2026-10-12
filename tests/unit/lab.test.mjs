@@ -155,6 +155,6 @@ test('scenario integrity', () => {
     assert.equal(s.against, against, `${s.id} 'against' flag must match the data`);
   }
   assert.ok(SCENARIOS.filter((s) => s.against).length >= 2, 'some scenarios move against the news');
-  assert.ok(SCENARIOS.some((s) => s.days.some((d) => d.open != null)), 'at least one gap day');
+  assert.ok(SCENARIOS.some((s) => s.days.some((d, i) => d.open !== (i === 0 ? s.start : s.days[i - 1].price))), 'at least one gap day');
   assert.ok(SCENARIOS.some((s) => ['long', 'short'].some((side) => runPosition({ side, entry: s.start, quantity: s.quantity, days: s.days, margin: s.margin }).margin.exceeds)), 'a loss-exceeds-margin case exists');
 });

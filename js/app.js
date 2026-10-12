@@ -114,7 +114,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toggle?.
 store.subscribe(syncBand);
 // Progress saved in another tab: refresh read-only summary pages so they never show stale numbers.
 // (Pages with work in progress — lessons, practice, tests — are left alone.)
-const LIVE_VIEWS = new Set(['dashboard', 'progress', 'parent']);
+const LIVE_VIEWS = new Set(['dashboard', 'progress', 'parent', 'certificates']);
 window.addEventListener('storage', (e) => {
   if ((e.key === 'mm.progress.v1' || e.key === null) && LIVE_VIEWS.has(viewEl.dataset.view)) {
     const active = document.activeElement;

@@ -185,8 +185,11 @@ export const GLOSSARY = [
   },
   {
     id: 'speculator', term: 'speculator', say: 'SPEK-yuh-lay-ter', world: 2,
-    def: { explorer: 'Someone who trades hoping a price will move their way, and who can lose money.', analyst: 'A trader who tries to profit from price changes and accepts the risk of losses.' },
-    example: { explorer: 'A speculator does not grow or use wheat.', analyst: 'Speculators take on price risk that hedgers want to reduce, and many lose money.' }
+    def: {
+      explorer: 'Someone who has no wheat to sell or use, but trades hoping a price will move their way. Speculators can lose money.',
+      analyst: 'A trader who does not hedge but trades to try to profit from price changes (CFTC). Speculators take on new price risk; the CFTC warns that many individuals lose all of their money.'
+    },
+    example: { explorer: 'Ms. Tate has no wheat, but she trades wheat futures. If the price moves the wrong way, she loses.', analyst: 'A speculator who buys wheat futures at $6.00 loses if the price falls to $5.70. Pretend prices.' }
   },
   {
     id: 'delivery', term: 'delivery', say: 'dih-LIV-er-ee', world: 2,
@@ -202,6 +205,40 @@ export const GLOSSARY = [
     id: 'price-discovery', term: 'price discovery', say: 'PRYSS dis-KUV-er-ee', world: 2,
     def: { explorer: 'How buyers and sellers together figure out a price.', analyst: 'The process of finding a price level through the interaction of buyers and sellers.' },
     example: { explorer: 'At the market, buyers and sellers settle on a price for peaches.', analyst: 'Futures trading helps with price discovery for crops.' }
+  },
+  {
+    id: 'counterparty', term: 'counterparty', say: 'KOWN-ter-par-tee', world: 2,
+    def: { explorer: 'The person on the other side of a deal.', analyst: 'The opposite party in an agreement or trade: the buyer is the seller\'s counterparty, and the seller is the buyer\'s.' },
+    example: { explorer: 'In the farmer\'s deal, the baker is his counterparty.', analyst: 'In a private forward agreement, each side depends on its counterparty keeping its word.' }
+  },
+  {
+    id: 'clearinghouse', term: 'clearinghouse', say: 'KLEER-ing-hows', world: 2,
+    def: {
+      explorer: 'The middle helper in every futures trade. It is the buyer to every seller and the seller to every buyer.',
+      analyst: 'An organization through which futures trades are cleared and settled. It acts as the buyer to all sellers and the seller to all buyers (CFTC), so traders do not depend on one unknown counterparty.'
+    },
+    example: { explorer: 'Because of the clearinghouse, a farmer does not have to trust a stranger to keep a promise.', analyst: 'After a trade is cleared, each trader\'s counterparty is the clearinghouse. Traders still pay their own losses.' }
+  },
+  {
+    id: 'daily-settlement', term: 'daily settlement (mark to market)', say: 'DAY-lee SET-ul-ment', world: 2,
+    def: {
+      explorer: 'Every day, gains are added to a futures account and losses are taken out.',
+      analyst: 'The daily process in which futures positions are marked to the market at the day\'s settlement price: gains are credited and losses are debited each day. Losses that drop an account below the required level lead to a margin call.'
+    },
+    example: { explorer: 'If the price moves against you today, money comes out of your account today.', analyst: 'A long position loses $500 on Monday; that $500 is taken from the account at Monday\'s settlement (pretend numbers).' }
+  },
+  {
+    id: 'position', term: 'position', say: 'puh-ZISH-un', world: 2,
+    def: { explorer: 'The side you are on in a futures deal, like having bought or having sold.', analyst: 'An interest in the market, either long or short, in the form of one or more open contracts (CFTC).' },
+    example: { explorer: 'If you bought 1 contract and have not closed it out, you have a position.', analyst: 'A trader short 2 July wheat contracts has a short position of 2 contracts.' }
+  },
+  {
+    id: 'cash-settlement', term: 'cash settlement', say: 'KASH SET-ul-ment', world: 2,
+    def: {
+      explorer: 'Ending a futures deal with a money payment instead of handing over the real goods.',
+      analyst: 'A way some futures contracts are settled: instead of delivering the actual commodity, a cash amount based on its value (or on an index) changes hands. Also called financial settlement.'
+    },
+    example: { explorer: 'Some contracts end with money instead of a truck of wheat.', analyst: 'A contract based on a stock index cannot deliver "the index", so contracts like that are typically settled in cash.' }
   },
 
   // ── World 3: What People Trade ────────────────────────────────────────────
@@ -242,6 +279,61 @@ export const GLOSSARY = [
     id: 'short', term: 'short', say: 'SHORT', world: 4,
     def: { explorer: 'Having sold, so you are helped if the price goes down and hurt if it goes up.', analyst: 'The selling side of a futures contract. A short position gains if the price falls and loses if it rises.' },
     example: { explorer: 'A farmer who agreed to sell wheat is like being short.', analyst: 'A farmer hedging a crop might go short wheat futures.' }
+  },
+  {
+    id: 'axis', term: 'axis', say: 'AK-sis', world: 4,
+    def: { explorer: 'One of the two number lines on a chart. Time usually goes along the bottom, and price goes up the side.', analyst: 'A reference line on a chart. On a price chart, the horizontal (x) axis usually shows time and the vertical (y) axis shows price. Check where an axis starts and how far apart its gridlines are.' },
+    example: { explorer: 'Look down to the bottom axis to find the week.', analyst: 'A price axis that starts at $5.00 instead of $0 makes changes look steeper.' }
+  },
+  {
+    id: 'open-price', term: 'open (opening price)', say: 'OH-pen', world: 4,
+    def: { explorer: 'The first price in a time period, like the start of a day.', analyst: 'The first price traded in a time period. On a candlestick it is one end of the body.' },
+    example: { explorer: 'The corn price opened at $10 on Monday.', analyst: 'On an up candle, the open is the bottom of the body.' }
+  },
+  {
+    id: 'high-price', term: 'high', say: 'HY', world: 4,
+    def: { explorer: 'The highest price in a time period.', analyst: 'The highest price traded in a time period, shown by the top of a candlestick\'s upper wick.' },
+    example: { explorer: 'On Monday the price went as high as $13.', analyst: 'A long upper wick means the high was well above the close.' }
+  },
+  {
+    id: 'low-price', term: 'low', say: 'LOH', world: 4,
+    def: { explorer: 'The lowest price in a time period.', analyst: 'The lowest price traded in a time period, shown by the bottom of a candlestick\'s lower wick.' },
+    example: { explorer: 'On Wednesday the price went as low as $8.', analyst: 'Range = high − low.' }
+  },
+  {
+    id: 'close-price', term: 'close (closing price)', say: 'KLOHZ', world: 4,
+    def: { explorer: 'The last price in a time period, like the end of a day.', analyst: 'The last price in a time period. Comparing the close with the open tells you whether a candle is up or down.' },
+    example: { explorer: 'Monday closed at $12, higher than it opened.', analyst: 'A close below the open makes a down candle.' }
+  },
+  {
+    id: 'candle-body', term: 'body (of a candle)', say: 'BOD-ee', world: 4,
+    def: { explorer: 'The thick box of a candlestick. It goes from the open price to the close price.', analyst: 'The thick part of a candlestick, spanning the open and the close. In Market Minds, up candles have hollow bodies and down candles have filled bodies; other charts may use colors instead.' },
+    example: { explorer: 'A tall body means the price moved a lot from open to close.', analyst: 'Body size = |close − open|.' }
+  },
+  {
+    id: 'wick', term: 'wick (shadow)', say: 'WIK', world: 4,
+    def: { explorer: 'A thin line above or below a candle\'s body. The wicks reach the high and the low.', analyst: 'A thin line above or below a candlestick\'s body. The top of the upper wick is the high; the bottom of the lower wick is the low. Also called a shadow.' },
+    example: { explorer: 'Follow the top wick to its end to find the high.', analyst: 'A long upper wick shows the price rose during the period, then fell back before the close.' }
+  },
+  {
+    id: 'price-range', term: 'range', say: 'RAYNJ', world: 4,
+    def: { explorer: 'How far apart the highest and lowest prices are.', analyst: 'The difference between the high and the low of a period: high − low.' },
+    example: { explorer: 'High $13 and low $9 means a range of $4.', analyst: 'High $4.80 and low $4.35 give a range of $0.45.' }
+  },
+  {
+    id: 'pattern', term: 'pattern', say: 'PAT-ern', world: 4,
+    def: { explorer: 'A shape people notice on a chart. Patterns show the past and do not promise what happens next.', analyst: 'A shape or repeated behavior people notice in price data. Patterns describe the past and can fail without warning; no pattern guarantees a future price.' },
+    example: { explorer: 'Four days up is a pattern, but day five can still go down.', analyst: 'A pattern that "worked" three times can fail the fourth time when new information arrives.' }
+  },
+  {
+    id: 'gain', term: 'gain', say: 'GAYN', world: 4,
+    def: { explorer: 'Money (or points) you end up with above what you started with.', analyst: 'A positive result from a trade or decision: the amount by which you end up better off.' },
+    example: { explorer: 'Deja gained 3 points when the price rose.', analyst: 'A long that buys at $5.00 and exits at $5.40 gains $0.40 per unit.' }
+  },
+  {
+    id: 'loss', term: 'loss', say: 'LAWSS', world: 4,
+    def: { explorer: 'Money (or points) you end up without, compared with what you started with.', analyst: 'A negative result from a trade or decision: the amount by which you end up worse off. In futures, losses can be larger than the money first deposited.' },
+    example: { explorer: 'Jaylen lost 3 points when the price went up.', analyst: 'A short at $5.00 that exits at $5.40 has a loss of $0.40 per unit.' }
   },
 
   // ── World 5: Market Math ──────────────────────────────────────────────────

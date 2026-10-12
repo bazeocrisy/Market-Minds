@@ -1,5 +1,6 @@
 // My Progress (#/progress). Everything shown comes from this device's saved progress.
-import { h, pageHead, notice, linkBtn, btn, plural, skillName, worldTitle, lessonsInWorld, readyLessons, formatDate, statBox, progressBar, confirmDialog, closeAllModals } from '../ui/dom.js';
+import { h, pageHead, notice, linkBtn, btn, plural, skillName, worldTitle, lessonsInWorld, readyLessons, readySkillIds, formatDate, statBox, progressBar, confirmDialog, closeAllModals } from '../ui/dom.js';
+import { worldCertificates, skillCertificates } from './certificates.js';
 import { pick } from '../content/band.js';
 import { WORLDS } from '../content/worlds.js';
 import { lessonById } from '../content/lessons.js';
@@ -12,8 +13,8 @@ export const LEVEL_LABEL = {
 export const levelBadge = (level) => h('span', { class: `level level-${level || 'not-started'}` }, LEVEL_LABEL[level] || 'Not started');
 export function safeLevel(state, id) { try { return masteryFor(state, id)?.level || 'not-started'; } catch { return 'not-started'; } }
 
-/** Mastery table shared with the Parent & Teacher view. */
-export function skillTable(state, ids = SKILL_IDS) {
+/** Mastery table shared with the Parent & Teacher view. Defaults to skills whose lesson is ready (lesson order). */
+export function skillTable(state, ids = readySkillIds()) {
   return h('div', { class: 'table-wrap table-stack' }, h('table', {},
     h('caption', { class: 'sr-only' }, 'Skill mastery'),
     h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Skill'), h('th', { scope: 'col' }, 'Level'),
@@ -75,6 +76,15 @@ export function render(el, params, ctx) {
 
   // ----- skills -----
   page.append(h('section', { class: 'section' }, h('h2', {}, 'Skills'), skillTable(state)));
+
+  // ----- certificates -----
+  const wc = worldCertificates(state), sc = skillCertificates(state);
+  const earned = [...wc, ...sc].filter((c) => c.earned);
+  page.append(h('section', { class: 'section' }, h('h2', {}, 'Achievement Certificates'),
+    h('p', {}, earned.length
+      ? `You have earned ${plural(earned.length, 'certificate')}: ${earned.map((c) => (c.kind === 'world' ? worldTitle(c.world) : `${c.skill.name} Skill Badge`)).join(', ')}.`
+      : 'No certificates yet. Skill Badges and World certificates are earned by mastering skills on your own.'),
+    h('div', { class: 'btn-row' }, linkBtn('#/certificates', earned.length ? 'View and print certificates' : 'See what each certificate needs', 'btn'))));
 
   // ----- worlds -----
   const worlds = h('section', { class: 'section' }, h('h2', {}, 'Progress by world'));

@@ -109,6 +109,8 @@ export function renderQuestion(q, opts = {}) {
     });
     group.append(...buttons);
     if (buttons.length === 2 || buttons.every((b) => b.textContent.length < 28)) group.classList.add('two-col');
+    // One-word answers (e.g. Open / High / Low / Close on a candlestick) fit two per row even on phones.
+    if (buttons.length >= 2 && buttons.every((b) => b.textContent.trim().length <= 10)) group.classList.add('short');
     syncTabs();
     answerArea.append(group);
     controls.push(...buttons);

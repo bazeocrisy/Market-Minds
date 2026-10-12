@@ -2,7 +2,7 @@
 // - CACHE_VERSION is a content hash written by scripts/update-sw.mjs; a new version deletes every older cache.
 // - Network-first for all same-origin GETs: online learners always get the newest files; the cache is only a fallback.
 // - Progress lives in localStorage and is never touched here.
-const CACHE_VERSION = '584a2b1a0d97';
+const CACHE_VERSION = 'ef59bdf05e60';
 const CACHE = `mm-${CACHE_VERSION}`;
 const PRECACHE = [
   './',
@@ -24,7 +24,9 @@ const PRECACHE = [
   './js/engine/check.js',
   './js/engine/format.js',
   './js/engine/generate.js',
+  './js/engine/generators/charts.js',
   './js/engine/generators/futures.js',
+  './js/engine/generators/futures2.js',
   './js/engine/generators/market.js',
   './js/engine/generators/pools.js',
   './js/engine/generators/prices.js',
@@ -57,6 +59,7 @@ const PRECACHE = [
   './js/views/stories.js',
   './js/views/test.js',
   './js/views/thinking.js',
+  './js/views/welcome.js',
   './manifest.webmanifest',
   './styles.css'
 ];

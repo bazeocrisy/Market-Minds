@@ -5,6 +5,20 @@ import { termById } from '../content/glossary.js';
 import { SKILLS } from '../content/skills.js';
 import { missQueue } from '../engine/index.js';
 import { skillTable } from './progress.js';
+import { worldCertificates, skillCertificates } from './certificates.js';
+
+/** Earned certificates (skill milestones only — never trading results), recomputed from progress. */
+function certSummary(state) {
+  let wc = [], sc = [];
+  try { wc = worldCertificates(state); sc = skillCertificates(state); } catch { /* ignore */ }
+  const earned = [...wc, ...sc].filter((c) => c.earned);
+  return h('div', {},
+    h('h3', { style: 'margin-top:24px' }, 'Achievement Certificates'),
+    h('p', {}, `Earned: ${earned.length} of ${wc.length + sc.length}. `,
+      'A Skill Badge needs that skill mastered (independent, first-try answers). A World certificate needs every ready lesson in the world completed and all its skills mastered. ',
+      h('a', { href: '#/certificates', class: 'no-print' }, 'View certificates')),
+    earned.length ? h('ul', {}, earned.map((c) => h('li', {}, c.kind === 'world' ? `${worldTitle(c.world)} (world certificate)` : `${c.skill.name} (Skill Badge)`))) : null);
+}
 
 export function render(el, params, ctx) {
   const state = ctx.store.get();
@@ -16,7 +30,8 @@ export function render(el, params, ctx) {
     lead: 'What each ready lesson teaches, and how this learner is doing on this device.'
   }));
   page.append(h('div', { class: 'btn-row no-print', style: 'margin-top:0;margin-bottom:24px' },
-    btn('Print this page', () => window.print(), 'btn btn-primary'), linkBtn('#/progress', 'Learner’s My Progress page', 'btn')));
+    btn('Print this page', () => window.print(), 'btn btn-primary'), linkBtn('#/progress', 'Learner’s My Progress page', 'btn'),
+    linkBtn('#/certificates', 'Achievement Certificates', 'btn')));
   page.append(notice(h('div', {},
     h('p', {}, h('strong', {}, 'Privacy: '), 'Market Minds has no accounts and collects no names. Progress is saved only in this browser on this device — clearing browser data or using “Reset my progress” erases it.'),
     h('p', {}, h('strong', {}, 'Safety: '), 'All prices are pretend. Market Minds teaches ideas about markets and risk; it never connects to real trading. Futures involve substantial risk, including losses larger than the margin deposit, and are not suitable for children to trade.'))));
@@ -33,6 +48,7 @@ export function render(el, params, ctx) {
       `Tests taken: ${state.tests.length}.`),
     h('p', { class: 'small muted' }, '“On your own” = first-try correct with no hint (counts toward mastery). “With help” = correct after a hint or retry.'),
     skillTable(state),
+    certSummary(state),
     h('h3', { style: 'margin-top:24px' }, 'Needs review'),
     queue.length
       ? h('ul', {}, queue.map((id) => h('li', {}, `${skillName(id)} — missed ${plural(state.misses[id]?.count || 0, 'time')}`)))

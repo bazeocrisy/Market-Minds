@@ -24,7 +24,7 @@ function reviewWeight(state, id, now) {
 }
 
 /**
- * createPracticeSession({ band, skills, difficulty, mode, length?, rng|seed?, now? }, store?)
+ * createPracticeSession({ band, skills, readySkills?, difficulty, mode, length?, rng|seed?, now? }, store?)
  * mode: 'practice'|'skill'|'lesson' (round-robin) · 'world' (random) · 'misses' · 'review'|'mixed' · 'warmup' (short, default 3)
  * difficulty: 'easy'|'medium'|'challenge'|'adaptive'
  */
@@ -34,8 +34,12 @@ export function createPracticeSession(opts = {}, store = null) {
   const band = opts.band === 'analyst' ? 'analyst' : 'explorer';
   const mode = MODE_ALIAS[opts.mode] ? opts.mode : 'practice';
   const strategy = MODE_ALIAS[mode];
-  const given = (Array.isArray(opts.skills) && opts.skills.length ? opts.skills : SKILL_IDS).filter((s) => SKILLS[s]);
-  const restrict = Array.isArray(opts.skills) && opts.skills.length > 0;
+  // readySkills (optional): only these skills may appear (e.g. skills whose lessons are ready). Empty intersection → ignored.
+  const ready = Array.isArray(opts.readySkills) ? new Set(opts.readySkills) : null;
+  const base = (Array.isArray(opts.skills) && opts.skills.length ? opts.skills : SKILL_IDS).filter((s) => SKILLS[s]);
+  const readyBase = ready ? base.filter((s) => ready.has(s)) : base;
+  const given = readyBase.length ? readyBase : base;
+  const restrict = (Array.isArray(opts.skills) && opts.skills.length > 0) || given.length < SKILL_IDS.length;
   const adaptive = opts.difficulty === 'adaptive';
   let level = adaptive ? 'easy' : DIFFICULTIES.includes(opts.difficulty) ? opts.difficulty : 'easy';
   const limit = Number.isFinite(opts.length) && opts.length > 0 ? Math.floor(opts.length) : strategy === 'warmup' ? 3 : Infinity;

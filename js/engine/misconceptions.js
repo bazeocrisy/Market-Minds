@@ -34,7 +34,24 @@ export const MISCONCEPTIONS = {
   'margin-is-max-loss': 'Margin is a deposit, not a limit on losses. Clue: if the price moves a lot, losses can be bigger than the deposit.',
   'leverage-only-gains': 'Leverage works both ways. Clue: it makes gains AND losses bigger compared with the deposit.',
   'futures-informal': 'Real futures are not informal deals. Clue: futures contracts are standardized and traded on regulated exchanges.',
-  'guaranteed-profit': 'No agreement guarantees a profit. Clue: an agreement sets a price, but nobody knows whether the market will end up higher or lower.'
+  'guaranteed-profit': 'No agreement guarantees a profit. Clue: an agreement sets a price, but nobody knows whether the market will end up higher or lower.',
+  // batch 2: World 2 (rest) and World 4
+  'forward-futures-mixup': 'The features of forwards and futures got switched. Clue: a forward is a private deal where the two sides choose the terms; a futures contract has terms set by the exchange and is traded on a regulated exchange.',
+  'futures-custom-terms': 'In a futures contract, the two traders do not choose the amount, quality, or delivery month. Clue: the exchange standardizes those terms; traders choose how many contracts to trade and at what price.',
+  'standardized-fixed-price': 'Standardized does not mean the exchange sets the price. Clue: the exchange sets the contract terms (amount, quality, delivery months); the price comes from buyers and sellers trading.',
+  'hedger-speculator-swap': 'The hedger and the speculator got switched. Clue: a hedger already has a price risk from their business (they grow, use, or need the item); a speculator has no such risk and takes one on hoping to profit.',
+  'speculator-always-wins': 'Speculators do not always make money. Clue: a speculator takes on price risk, and the price can move the opposite way from what they expected.',
+  'offset-same-direction': 'It looks like the same trade was repeated instead of the opposite one. Clue: to close a position you make the opposite trade — bought → sell, sold → buy.',
+  'must-take-delivery': 'Most futures contracts never end in delivery. Clue: traders usually close (offset) their position with an opposite trade before the delivery date.',
+  'offset-no-gain-loss': 'Closing a position early still locks in a gain or a loss. Clue: compare the price where the position was opened with the price where it was closed.',
+  'candle-open-close-mixup': 'The open and the close got switched. Clue: on an up candle (hollow body, ▲) the open is at the BOTTOM of the body; on a down candle (filled body, ▼) the open is at the TOP.',
+  'candle-wick-body-mixup': 'The body and the wicks got mixed up. Clue: the body runs from the open to the close; the thin wicks reach out to the high and the low.',
+  'range-body-only': 'It looks like only the body was measured. Clue: the range runs from the top of the upper wick (the high) to the bottom of the lower wick (the low).',
+  'long-short-swap': 'Long and short got switched. Clue: long means you bought and gain when the price rises; short means you sold and gain when the price falls.',
+  'long-short-names': '"Long" and "short" name the side you took, not the amount or the time. Clue: long = bought first; short = sold first.',
+  'position-cant-lose': 'Every position can lose. Clue: a long position loses when the price falls, and a short position loses when the price rises.',
+  'chart-explains-why': 'A price chart shows WHAT happened, not WHY. Clue: to know why a price moved, you need other information, like news about supply or demand.',
+  'chart-hides-past': 'A chart does show what already happened. Clue: past prices can be read right off the chart — what it cannot show is the future, or the reasons.'
 };
 
 export const GENERIC_FEEDBACK = {
